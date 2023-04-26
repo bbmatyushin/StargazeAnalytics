@@ -1,0 +1,18 @@
+printf "[Unit]
+Description=Stargaze Parser Analytics
+After=network-online.target
+
+[Service]
+User=$USER
+WorkingDirectory=`pwd`
+ExecStart=`pwd`/venv/bin/python3 parser_start.py
+Restart=always
+RestartSec=7
+
+[Install]
+WantedBy=multi-user.target" > /etc/systemd/system/stargaze_analytics_parser.service
+```
+```shell
+systemctl daemon-reload
+systemctl enable stargaze_analytics_parser.service
+systemctl restart stargaze_analytics_parser.service
