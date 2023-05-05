@@ -21,24 +21,34 @@ docker logs -f sg_analytics_parser
 ```
 Выходим из логов командой `Ctrl + C`
 
-### Запускаем парсер отдельным сервисным процессом
+### Запускаем Бота отдельным сервисным процессом
+Находясь в директории с ботом, выполнить команды:
 ```shell
+# Создаём виртуальное окружения для необходимых библиотек
+python3 -m venv venv
+```
+```shell
+# Устанавливаем зависимости
+pip install -r requirements.txt
+```
+```shell
+# Создаем сервисный файл запуска бота
 printf "[Unit]
-Description=Stargaze Parser Analytics
+Description=Stargaze Analytics BOT
 After=network-online.target
 
 [Service]
 User=$USER
 WorkingDirectory=`pwd`
-ExecStart=`pwd`/venv/bin/python3 parser_start.py
+ExecStart=`pwd`/venv/bin/python3 bot_start.py
 Restart=always
 RestartSec=7
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/stargaze_analytics_parser.service
+WantedBy=multi-user.target" > /etc/systemd/system/stargaze_analytics_bot.service
 ```
 ```shell
 systemctl daemon-reload
-systemctl enable stargaze_analytics_parser.service
-systemctl restart stargaze_analytics_parser.service
+systemctl enable stargaze_analytics_bot.service
+systemctl restart stargaze_analytics_bot.service
 ```
