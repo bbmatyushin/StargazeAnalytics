@@ -1,15 +1,16 @@
-import sqlite3
+import aiosqlite
+import asyncio
 import os
 from pathlib import Path
 
 
 class MainDB:
     def __init__(self):
-        self.connector = sqlite3.connect(f"{Path(os.path.dirname(os.path.realpath(__file__)), 'stargaze_analytics.db')}")
-        self.cursor = self.connector.cursor()
+        self.connector = aiosqlite.connect(f"{Path(os.path.dirname(os.path.realpath(__file__)), 'stargaze_analytics.db')}")
+        # self.cursor = self.connector.cursor()
 
-    def create_tables(self):
-        with self.connector:
+    async def create_tables(self):
+        async with self.connector as conn:
             sql = """CREATE TABLE IF NOT EXISTS collections(
                         coll_id INTEGER PRIMARY KEY AUTOINCREMENT,
                         coll_name TEXT,
@@ -34,8 +35,9 @@ class MainDB:
                     CREATE TABLE IF NOT EXISTS floors(
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         coll_id INTEGER,
-                        floor_price REAL,
+                        floor_price INTEGER,
                         date_add DATETIME,
+                        UNIQUE(coll_id, floor_price, date_add),
                         FOREIGN KEY (coll_id) REFERENCES collections(coll_id)
                         );
                     CREATE TABLE IF NOT EXISTS rarity(
@@ -52,7 +54,7 @@ class MainDB:
                         token_id INTEGER,
                         seller_id INTEGER,
                         buyer_id INTEGER,
-                        price_stars REAL,
+                        price_stars INTEGER,
                         price_usd REAL,
                         date_create DATETIME,
                         date_add DATETIME,
@@ -82,7 +84,7 @@ class MainDB:
                         token_id INTEGER,
                         recipient_id INTEGER,
                         creator_id INTEGER,
-                        price_stars REAL,
+                        price_stars INTEGER,
                         price_usd REAL,
                         date_create DATETIME,
                         date_add DATETIME,
@@ -92,11 +94,26 @@ class MainDB:
                         FOREIGN KEY (recipient_id) REFERENCES owners(owner_id),
                         FOREIGN KEY (creator_id) REFERENCES owners(owner_id)
                         );
+                    CREATE TABLE IF NOT EXISTS listings(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        block_height INTEGER,
+                        coll_id INTEGER,
+                        token_id INTEGER,
+                        seller_id INTEGER,
+                        price_stars INTEGER,
+                        price_usd REAL,
+                        event_name TEXT,
+                        date_create DATETIME,
+                        date_add DATETIME,
+                        UNIQUE(block_height, date_create, token_id),
+                        FOREIGN KEY (coll_id) REFERENCES collections(coll_id),
+                        FOREIGN KEY (token_id) REFERENCES tokens(token_id),
+                        FOREIGN KEY (seller_id) REFERENCES owners(owner_id)
+                        );
                         """
-            with self.connector:
-                self.cursor.executescript(sql)
-                self.connector.commit()
+            await conn.executescript(sql)
+            await conn.commit()
 
 
 if __name__ == "__main__":
-    MainDB().create_tables()
+    asyncio.run(MainDB().create_tables())
