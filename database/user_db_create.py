@@ -25,11 +25,10 @@ class UserDB:
                         date_add DATETIME,
                         FOREIGN KEY (user_id) REFERENCES users(user_id) 
                         );
-                    CREATE TABLE IF NOT EXISTS users_block_bot(
+                    CREATE TABLE IF NOT EXISTS inactive_users(
                         user_id INTEGER UNIQUE,
-                        block_flag INTEGER,
+                        inactive_flag INTEGER,
                         date_add DATETIME,
-                        date_upd DATETIME,
                         FOREIGN KEY (user_id) REFERENCES users(user_id) 
                         );
                     CREATE TABLE IF NOT EXISTS users_subscribe(

@@ -20,25 +20,29 @@ class DailyReport:
                       f"\t◗ {total_24h[3]:,} USD ({delta_usd})\n"
         return report_1_ru
 
-    async def get_total_top5(self):
+    async def get_total_top_num(self):
         """Объёмы продаж с разбивкой по коллекциям"""
         url_sg = 'https://www.stargaze.zone/marketplace/'
         # tail for url_metabase -> &chart_dates=past7days~#theme=night
         url_metabase = 'https://metabase.constellations.zone/public/dashboard/8281228d-66c0-42d9-83d6-f7e07d05728a?collection='
         report_2_ru: list = []
         num: int = 1
-        report_head: str = f"\n⚛️ <b>TОП-5 коллекций</b>:\n"
+        top_num: int = 3
+        report_head: str = f"\n⚛️ <b>TОП-{top_num} коллекции</b>:\n"
         report_2_ru.append(report_head)
-        async for data in self.analytics.volum_top5():
-            coll_addr, coll_name, sum_stars_t1, sum_stars_t2, \
-                delta_stars, sum_usd_t1, sum_usd_t2, delta_usd = \
-                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]
+        async for data in self.analytics.volum_top_num(top_num):
+            coll_name, coll_addr, sum_stars_t1, sum_stars_t2, \
+                delta_stars, sum_usd_t1, sum_usd_t2, delta_usd, count_t1, count_t2, delta_count = \
+                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10]
             url_mb = f"{url_metabase}{coll_addr}&chart_dates=past7days~#theme=night"
             delta_stars = f"+{delta_stars}% 📈" if delta_stars > 0 else \
                 f"{delta_stars}%" if delta_stars == 0 else f"{delta_stars}% 📉"
-            output_ru = f"\t{num}. <a href='{url_sg}{coll_addr}'>{coll_name}</a>:\n" \
-                        f"\t\t\t↳ {sum_stars_t1:,} STARS ({delta_stars})\n" \
-                        f"\t\t\t↳ <a href='{url_mb}'><em>view on metabase</em></a>\n"
+            delta_count = f"+{delta_count}% 📈" if delta_count > 0 else \
+                f"{delta_count}%" if delta_count == 0 else f"{delta_count}% 📉"
+            output_ru = f"\t{num}. <a href='{url_sg}{coll_addr}'><b>{coll_name}</b></a>\n" \
+                        f"\t\t↳ <b>Vol.</b>: {sum_stars_t1:,} STARS ({delta_stars})\n" \
+                        f"\t\t↳ <b>Sales</b>: {count_t1} ps. ({delta_count})\n" \
+                        f"\t\t↳ <a href='{url_mb}'><em>view on metabase</em></a>\n"
             report_2_ru.append(output_ru)
             num += 1
         return "".join(report_2_ru)
@@ -65,7 +69,7 @@ class DailyReport:
 
 async def get_daily_report():
     task_1 = asyncio.create_task(DailyReport().get_total_volume())
-    task_2 = asyncio.create_task(DailyReport().get_total_top5())
+    task_2 = asyncio.create_task(DailyReport().get_total_top_num())
     task_3 = asyncio.create_task(DailyReport().get_whale_top3())
     report_1_ru = await task_1
     report_2_ru = await task_2

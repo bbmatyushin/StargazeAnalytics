@@ -6,7 +6,7 @@ class UserDBDelete(UserDB):
         """Удаляем пользователя из таблицы тех кто заблокировал бота,
         если пользователь передумал и решил опять пользоваться ботом"""
         async with self.connector as conn:
-            sql = """DELETE FROM users_block_bot
+            sql = """DELETE FROM inactive_users
                     WHERE user_id = ?"""
             await conn.execute(sql, (user_id, ))
             await conn.commit()

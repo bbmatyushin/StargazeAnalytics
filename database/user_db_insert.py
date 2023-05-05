@@ -46,10 +46,10 @@ class UserDBInsert(UserDB):
             await conn.execute(sql, (user_id,))
             await conn.commit()
 
-    async def insert_users_block_bot(self, user_id: int):
+    async def insert_inactive_users(self, user_id: int):
         """Отмечаем флагом тех кто удалил чат с ботом"""
         async with self.connector as conn:
-            sql = """INSERT INTO users_block_bot(user_id, block_flag, date_add)
+            sql = """INSERT INTO inactive_users(user_id, inactive_flag, date_add)
                     VALUES(?, 1, DATETIME())"""
             await conn.execute(sql, (user_id,))
             await conn.commit()
