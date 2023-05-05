@@ -29,7 +29,7 @@ python3 -m venv venv
 ```
 ```shell
 # Устанавливаем зависимости
-pip install -r requirements.txt
+source venv/bin/activate && pip install -r requirements.txt
 ```
 ```shell
 # Создаем сервисный файл запуска бота
