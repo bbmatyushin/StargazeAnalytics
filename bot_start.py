@@ -13,11 +13,28 @@ from usefultools.create_bot import bot, dp
 from database.user_db_select import UserDBSelect, UserDB
 from database.user_db_insert import UserDBInsert
 from reports.report_24h import get_daily_report
+from reports.report_blitz import get_blitz_report
 
 from handlers import main, commands
 
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
+
+
+@aiocron.crontab('0 */1 * * *')
+async def send_blitz_report():
+    """Ограничение - только для админов"""
+    logging.info(f"Send BLITZ report at {datetime.now()}")
+    report_text_ru = await get_blitz_report()
+    admins = await UserDBSelect().select_admins()
+    for user in admins:
+        try:
+            await bot.send_message(chat_id=user, text=report_text_ru,
+                                   parse_mode='HTML')
+        except ChatNotFound as err:
+            logging.warning(err)
+        except BotBlocked as err:
+            logging.warning(err)
 
 
 @aiocron.crontab('10 1 * * *')

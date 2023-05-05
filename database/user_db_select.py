@@ -71,5 +71,5 @@ class UserDBSelect(UserDB):
 
 
 if __name__ == "__main__":
-    result = asyncio.run(UserDBSelect().select_monthly_report_id())
+    result = asyncio.run(UserDBSelect().select_admins())
     print(result)
