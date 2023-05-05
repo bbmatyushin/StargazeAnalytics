@@ -11,10 +11,16 @@ class DailyReport:
         """Общие объёмы продаж за последние 24 часа"""
         total_24h = await self.analytics.total_volum()
         # sum_STARS_t1, sum_STARS_t2, delta_STARS, sum_USD_t1, sum_USD_t2, delta_USD
-        delta_stars = f"+{total_24h[2]}% 📈" if total_24h[2] > 0 else \
-            f"{total_24h[2]}%" if total_24h[2] == 0 else f"{total_24h[2]}% 📉"
-        delta_usd = f"+{total_24h[5]}% 📈" if total_24h[5] > 0 else \
-            f"{total_24h[5]}%" if total_24h[5] == 0 else f"{total_24h[5]}% 📉"
+        if isinstance(total_24h[2], float):
+            delta_stars = f"+{total_24h[2]}% 📈" if total_24h[2] > 0 else \
+                f"{total_24h[2]}%" if total_24h[2] == 0 else f"{total_24h[2]}% 📉"
+        else:
+            delta_stars = total_24h[2]
+        if isinstance(total_24h[5], float):
+            delta_usd = f"+{total_24h[5]}% 📈" if total_24h[5] > 0 else \
+                f"{total_24h[5]}%" if total_24h[5] == 0 else f"{total_24h[5]}% 📉"
+        else:
+            delta_usd = total_24h[5]
         report_1_ru = f"\n⭐️ <b>Общий объём продаж</b>:\n" \
                       f"\t◗ {total_24h[0]:,} STARS ({delta_stars})\n" \
                       f"\t◗ {total_24h[3]:,} USD ({delta_usd})\n"
@@ -35,10 +41,12 @@ class DailyReport:
                 delta_stars, sum_usd_t1, sum_usd_t2, delta_usd, count_t1, count_t2, delta_count = \
                 data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10]
             url_mb = f"{url_metabase}{coll_addr}&chart_dates=past7days~#theme=night"
-            delta_stars = f"+{delta_stars}% 📈" if delta_stars > 0 else \
-                f"{delta_stars}%" if delta_stars == 0 else f"{delta_stars}% 📉"
-            delta_count = f"+{delta_count}% 📈" if delta_count > 0 else \
-                f"{delta_count}%" if delta_count == 0 else f"{delta_count}% 📉"
+            if isinstance(delta_stars, float):
+                delta_stars = f"+{delta_stars}% 📈" if delta_stars > 0 else \
+                    f"{delta_stars}%" if delta_stars == 0 else f"{delta_stars}% 📉"
+            if isinstance(delta_count, float):
+                delta_count = f"+{delta_count}% 📈" if delta_count > 0 else \
+                    f"{delta_count}%" if delta_count == 0 else f"{delta_count}% 📉"
             output_ru = f"\t{num}. <a href='{url_sg}{coll_addr}'><b>{coll_name}</b></a>\n" \
                         f"\t\t↳ <b>Vol.</b>: {sum_stars_t1:,} STARS ({delta_stars})\n" \
                         f"\t\t↳ <b>Sales</b>: {count_t1} ps. ({delta_count})\n" \
