@@ -44,6 +44,19 @@ class UserDBSelect(UserDB):
                 result = await cursor.fetchall()
             return [el[0] for el in result]
 
+    async def select_admins_subscribe(self):
+        """Выборка админов бота с подпиской"""
+        async with self.connector as conn:
+            sql = """SELECT admins.user_id
+                    FROM admins
+                    LEFT JOIN inactive_users USING(user_id)
+                    LEFT JOIN users_subscribe USING(user_id)
+                    WHERE inactive_flag IS NULL
+                        AND subscribe_flag = 1"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchall()
+            return [el[0] for el in result]
+
     #TODO: ##########  REPORTS  ############
     async def select_daily_report_id(self):
         """Забираем последний номер отправленного ежеДНЕВНОГО отчета"""
@@ -71,5 +84,5 @@ class UserDBSelect(UserDB):
 
 
 if __name__ == "__main__":
-    result = asyncio.run(UserDBSelect().select_admins())
+    result = asyncio.run(UserDBSelect().select_admins_subscribe())
     print(result)

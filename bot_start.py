@@ -21,12 +21,13 @@ from handlers import main, commands
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
 
 
-@aiocron.crontab('0 */1 * * *')
+@aiocron.crontab('0 */2 * * *')
+# @aiocron.crontab('*/1 * * * *')
 async def send_blitz_report():
     """Ограничение - только для админов"""
     logging.info(f"Send BLITZ report at {datetime.now()}")
     report_text_ru = await get_blitz_report()
-    admins = await UserDBSelect().select_admins()
+    admins = await UserDBSelect().select_admins_subscribe()
     for user in admins:
         try:
             await bot.send_message(chat_id=user, text=report_text_ru,
@@ -37,7 +38,8 @@ async def send_blitz_report():
             logging.warning(err)
 
 
-@aiocron.crontab('10 1 * * *')
+@aiocron.crontab('10 11,23 * * *')
+# @aiocron.crontab('*/1 * * * *')
 async def send_daily_report():
     logging.info(f"Send DAILY report at {datetime.now()}")
     report_text_ru = await get_daily_report()
