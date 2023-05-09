@@ -34,22 +34,27 @@ class DailyReport:
         report_2_ru: list = []
         num: int = 1
         top_num: int = 3
-        report_head: str = f"\n⚛️ <b>TОП-{top_num} коллекции</b>:\n"
+        report_head: str = f"\n🖼 <b>TОП-{top_num} коллекции</b>:\n"
         report_2_ru.append(report_head)
         async for data in self.analytics.volum_top_num(top_num):
             coll_name, coll_addr, sum_stars_t1, sum_stars_t2, \
-                delta_stars, sum_usd_t1, sum_usd_t2, delta_usd, count_t1, count_t2, delta_count = \
-                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10]
+                delta_stars, sum_usd_t1, sum_usd_t2, delta_usd, count_t1, count_t2, delta_count, \
+                floor_price_t1, floor_price_t2, delta_floor = data[0], data[1], data[2], data[3], \
+                    data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13]
             url_mb = f"{url_metabase}{coll_addr}&chart_dates=past7days~#theme=night"
             if isinstance(delta_stars, float):
                 delta_stars = f"+{delta_stars}% 📈" if delta_stars > 0 else \
-                    f"{delta_stars}%" if delta_stars == 0 else f"{delta_stars}% 📉"
+                    f"nope" if delta_stars == 0 else f"{delta_stars}% 📉"
             if isinstance(delta_count, float):
                 delta_count = f"+{delta_count}% 📈" if delta_count > 0 else \
-                    f"{delta_count}%" if delta_count == 0 else f"{delta_count}% 📉"
+                    f"nope" if delta_count == 0 else f"{delta_count}% 📉"
+            if isinstance(delta_floor, float):
+                delta_floor = f"+{delta_floor}% 📈" if delta_floor > 0 else \
+                    f"nope" if delta_floor == 0 else f"{delta_floor}% 📉"
             output_ru = f"\t{num}. <a href='{url_sg}{coll_addr}'><b>{coll_name}</b></a>\n" \
                         f"\t\t↳ <b>Vol.</b>: {sum_stars_t1:,} STARS ({delta_stars})\n" \
                         f"\t\t↳ <b>Sales</b>: {count_t1} ps. ({delta_count})\n" \
+                        f"\t\t↳ <b>Floor</b>: {floor_price_t1:,} STARS ({delta_floor})\n" \
                         f"\t\t↳ <a href='{url_mb}'><em>view on metabase</em></a>\n"
             report_2_ru.append(output_ru)
             num += 1
@@ -82,7 +87,7 @@ async def get_daily_report():
     report_1_ru = await task_1
     report_2_ru = await task_2
     report_3_ru = await task_3
-    header = "#daily_report\n\n"\
+    header = "#24H_report\n\n"\
              "📊 <b>Аналитика Stargaze за последние 24Ч</b>\n\n"
     return header + report_1_ru + report_2_ru + report_3_ru
 

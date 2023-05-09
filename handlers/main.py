@@ -11,6 +11,7 @@ from usefultools.create_bot import dp, bot
 from keyboard import kb
 from database.user_db_insert import UserDBInsert
 from database.user_db_select import UserDBSelect
+from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 
 from reports.report_24h import get_daily_report
 
@@ -31,9 +32,18 @@ async def send_example_report(callback: CallbackQuery):
     user_id, username, first_name, last_name, language_code = \
         callback.from_user.id, callback.from_user.username, callback.from_user.first_name, \
         callback.from_user.last_name, callback.from_user.language_code
-    insert_data = [user_id, username, first_name, last_name, language_code]
+    data_insert = [user_id, username, first_name, last_name, language_code]
     try:  # добавляем пользователя в БД
-        await UserDBInsert().insert_users(insert_data=insert_data)
+        await UserDBInsert().insert_users(data_insert=data_insert)
+        admins = await UserDBSelect().select_admins()
+        for admin in admins:
+            try:  # оповещеть о новом пользователе
+                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{data_insert}',
+                                       parse_mode='HTML')
+            except ChatNotFound:
+                continue
+            except BotBlocked:
+                continue
     except aiosqlite.IntegrityError as err:
         logging.warning(err)
     text_ru = await get_daily_report()
@@ -49,9 +59,18 @@ async def subscribe_report(callback: CallbackQuery):
     user_id, username, first_name, last_name, language_code = \
         callback.from_user.id, callback.from_user.username, callback.from_user.first_name, \
             callback.from_user.last_name, callback.from_user.language_code
-    insert_data = [user_id, username, first_name, last_name, language_code]
+    data_insert = [user_id, username, first_name, last_name, language_code]
     try:  # добавляем пользователя в БД
-        await UserDBInsert().insert_users(insert_data=insert_data)
+        await UserDBInsert().insert_users(data_insert=data_insert)
+        admins = await UserDBSelect().select_admins()
+        for admin in admins:
+            try:  # оповещеть о новом пользователе
+                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{data_insert}',
+                                       parse_mode='HTML')
+            except ChatNotFound:
+                continue
+            except BotBlocked:
+                continue
     except aiosqlite.IntegrityError as err:
         logging.warning(err)
     try:  # ставим флаг, что пользователь подписан
@@ -71,6 +90,15 @@ async def get_report_callback(callback: CallbackQuery):
                                       reply_markup=kb.ikb_get_report)
     await callback.answer()
 
+
+@dp.callback_query_handler(text='no_thanks', state="*")
+async def no_thanks(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    msg_id = callback.message.message_id
+    await bot.edit_message_text(chat_id=user_id, message_id=msg_id,
+                                text=LEXICON_RU_HTML["no_thanks"], parse_mode='HTML',
+                                reply_markup=kb.ikb_subscribe)
+    await callback.answer()
 
 
 

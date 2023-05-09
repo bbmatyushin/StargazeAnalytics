@@ -37,6 +37,7 @@ class Analytics24H(MainDB):
             async with conn.execute(sql) as cursor:
                 result = await cursor.fetchone()
             return result
+
     async def volum_top_num(self, top_num: int):
         """Объемы продаж и количество сделок
         за последние 24 часа с разбивкой по ТОП-5 коллекциям
@@ -59,27 +60,52 @@ class Analytics24H(MainDB):
                         WHERE DATETIME(date_create) BETWEEN DATETIME(DATETIME(), '-48 hours')
                             AND DATETIME(DATETIME(), '-24 hours')
                         GROUP BY coll_id, coll_name
+                    ),
+                    get_floor AS(
+                    SELECT coll_id, floor_price, date_add
+                    FROM floors
+                    ORDER BY date_add DESC
+                    ),
+                    floor_t1 AS(
+                    SELECT coll_id, floor_price as floor_price_t1
+                    FROM get_floor
+                    WHERE DATETIME(date_add) >= DATETIME(DATETIME(), '-24 hours')
+                    GROUP BY coll_id
+                    ),
+                    floor_t2 AS(
+                    SELECT coll_id, floor_price as floor_price_t2
+                    FROM get_floor
+                    WHERE DATETIME(date_add) < DATETIME(DATETIME(), '-24 hours')
+                    GROUP BY coll_id
                     )
                     SELECT t1.coll_name, t1. coll_addr, sum_stars_t1, sum_stars_t2,
                         CASE
-                            WHEN sum_stars_t2 IS NULL THEN 'NEW!'
-                            WHEN sum_stars_t2 = 0 THEN 'NEW!'
+                            WHEN sum_stars_t2 IS NULL THEN 'nope'
+                            WHEN sum_stars_t2 = 0 THEN 'nope'
                             ELSE ROUND((sum_stars_t1 * 1.0/sum_stars_t2 - 1) * 100, 2)
                         END as 'delta_stars, %',
                         ROUND(sum_usd_t1, 2) sum_usd_t1,
                         ROUND(sum_usd_t2, 2) sum_usd_t2,
                         CASE
-                            WHEN sum_usd_t2 IS NULL THEN 'NEW!'
-                            WHEN sum_usd_t2 = 0 THEN 'NEW!'
+                            WHEN sum_usd_t2 IS NULL THEN 'nope'
+                            WHEN sum_usd_t2 = 0 THEN 'nope'
                             ELSE ROUND((sum_usd_t1 * 1.0/sum_usd_t2 - 1) * 100, 2)
                         END as 'delta_usd, %',
                         count_coll_t1, count_coll_t2,
                         CASE
-                            WHEN count_coll_t2 IS NULL THEN 'NEW!'
-                            WHEN count_coll_t2 = 0 THEN 'NEW!'
+                            WHEN count_coll_t2 IS NULL THEN 'nope'
+                            WHEN count_coll_t2 = 0 THEN 'nope'
                             ELSE ROUND((count_coll_t1 * 1.0/count_coll_t2 - 1) * 100, 2)
-                        END as 'delta_count, %'
-                    FROM t1 LEFT JOIN t2 USING(coll_id)"""
+                        END as 'delta_count, %',
+                        floor_price_t1, floor_price_t2,
+                        CASE
+                            WHEN floor_price_t2 IS NULL THEN 'nope'
+                            WHEN floor_price_t2 = 0 THEN 'nope'
+                            ELSE ROUND((floor_price_t1 * 1.0/floor_price_t2 - 1) * 100, 2)
+                        END as 'delta_floor, %'
+                    FROM t1 LEFT JOIN t2 USING(coll_id)
+                    LEFT JOIN floor_t1 USING(coll_id)
+                    LEFT JOIN floor_t2 USING(coll_id)"""
             async with conn.execute(sql, (top_num,)) as cursor:
                 result = await cursor.fetchall()
                 for row in result:
@@ -179,7 +205,7 @@ class AnalyticsAnother(MainDB):
 
 class AnalyticBlitz(MainDB):
     """Оперативная аналитика по маркетплейсу"""
-    async def get_top7_coll(self, top_num):
+    async def get_top_blitz(self, top_num):
         """ТОП-7 самых активно торгующихся за последние 10 часов"""
         async with self.connector as conn:
             #TODO: Переделать этот огромный запрос
@@ -301,10 +327,132 @@ class AnalyticBlitz(MainDB):
                     yield res
             # return result
 
+    async def get_top_blitz_v2(self, top_num):
+        """Второй вариант поиска самык активных коллекций
+        (основной упор на кол-во проданных предметов)"""
+        async with self.connector as conn:
+            sql = """WITH action_t AS(
+                        SELECT coll_id, STRFTIME('%Y-%m-%d %H:00', date_create) as dt,
+                            SUM(price_stars) as sum_stars, 
+                            COUNT(coll_id) as count_c,
+                            RANK() OVER(PARTITION BY coll_id ORDER BY STRFTIME('%m-%d %H', date_create) DESC) as 'rank'
+                        FROM sales
+                        GROUP BY coll_id, dt
+                        HAVING COUNT(coll_id) > 1
+                        ORDER BY dt DESC, count_c DESC
+                        ),
+                    floor_t AS(
+                        SELECT coll_id, STRFTIME('%Y-%m-%d %H:00', date_add) as dt,
+                            MIN(floor_price) as floor_price
+                        FROM floors
+                        GROUP BY coll_id, date_add
+                        ),
+                    main_t AS(SELECT * FROM action_t
+                        LEFT JOIN floor_t USING(coll_id, dt)
+                        ORDER BY dt DESC, rank, count_c DESC
+                        ),
+                    t1 AS(
+                        SELECT * FROM main_t
+                        WHERE rank = 1
+                        LIMIT ?
+                        ),
+                    t2 AS(
+                        SELECT * FROM main_t
+                        WHERE rank = 2
+                        ),
+                    t3 AS(
+                        SELECT * FROM main_t
+                        WHERE rank = 3
+                        ),
+                    t4 AS(
+                        SELECT * FROM main_t
+                        WHERE rank = 4
+                        ),
+                    t5 AS(
+                        SELECT * FROM main_t
+                        WHERE rank = 5
+                        )
+                    SELECT coll_addr, coll_name, t1.dt,
+                        t1.count_c,
+                        CASE
+                            WHEN t2.count_c IS NULL THEN 'nope'
+                            WHEN t2.count_c = 0 THEN 0.0
+                            ELSE ROUND((t1.count_c * 1.0 / t2.count_c - 1) * 100, 2)
+                        END AS 'delta_count2',
+                        CASE
+                            WHEN t3.count_c IS NULL THEN 'nope'
+                            WHEN t3.count_c = 0 THEN 0.0
+                            ELSE ROUND((t1.count_c * 1.0 / t3.count_c - 1) * 100, 2)
+                        END AS 'delta_count3',
+                        CASE
+                            WHEN t4.count_c IS NULL THEN 'nope'
+                            WHEN t4.count_c = 0 THEN 0.0
+                            ELSE ROUND((t1.count_c * 1.0 / t4.count_c - 1) * 100, 2)
+                        END AS 'delta_count4',
+                        CASE
+                            WHEN t5.count_c IS NULL THEN 'nope'
+                            WHEN t5.count_c = 0 THEN 0.0
+                            ELSE ROUND((t1.count_c * 1.0 / t5.count_c - 1) * 100, 2)
+                        END AS 'delta_count5',
+                        t1.sum_stars,
+                        CASE
+                            WHEN t2.sum_stars IS NULL THEN 'nope'
+                            WHEN t2.sum_stars = 0 THEN 0.0
+                            ELSE ROUND((t1.sum_stars * 1.0 / t2.sum_stars - 1) * 100, 2)
+                        END AS 'delta_sum2',
+                        CASE
+                            WHEN t3.sum_stars IS NULL THEN 'nope'
+                            WHEN t3.sum_stars = 0 THEN 0.0
+                            ELSE ROUND((t1.sum_stars * 1.0 / t3.sum_stars - 1) * 100, 2)
+                        END AS 'delta_sum3',
+                        CASE
+                            WHEN t4.sum_stars IS NULL THEN 'nope'
+                            WHEN t4.sum_stars = 0 THEN 0.0
+                            ELSE ROUND((t1.sum_stars * 1.0 / t4.sum_stars - 1) * 100, 2)
+                        END AS 'delta_sum4',
+                        CASE
+                            WHEN t5.sum_stars IS NULL THEN 'nope'
+                            WHEN t5.sum_stars = 0 THEN 0.0
+                            ELSE ROUND((t1.sum_stars * 1.0 / t5.sum_stars - 1) * 100, 2)
+                        END AS 'delta_sum5',
+                        t1.floor_price,
+                        CASE
+                            WHEN t2.floor_price IS NULL THEN 'nope'
+                            WHEN t2.floor_price = 0 THEN 0.0
+                            ELSE ROUND((t1.floor_price * 1.0 / t2.floor_price - 1) * 100, 2)
+                        END AS 'delta_floor2',
+                        CASE
+                            WHEN t3.floor_price IS NULL THEN 'nope'
+                            WHEN t3.floor_price = 0 THEN 0.0
+                            ELSE ROUND((t1.floor_price * 1.0 / t3.floor_price - 1) * 100, 2)
+                        END AS 'delta_floor3',
+                        CASE
+                            WHEN t4.floor_price IS NULL THEN 'nope'
+                            WHEN t4.floor_price = 0 THEN 0.0
+                            ELSE ROUND((t1.floor_price * 1.0 / t4.floor_price - 1) * 100, 2)
+                        END AS 'delta_floor4',
+                        CASE
+                            WHEN t5.floor_price IS NULL THEN 'nope'
+                            WHEN t5.floor_price = 0 THEN 0.0
+                            ELSE ROUND((t1.floor_price * 1.0 / t5.floor_price - 1) * 100, 2)
+                        END AS 'delta_floor5'
+                    FROM t1
+                        LEFT JOIN t2 USING(coll_id)
+                        LEFT JOIN t3 USING(coll_id)
+                        LEFT JOIN t4 USING(coll_id)
+                        LEFT JOIN t5 USING(coll_id)
+                        LEFT JOIN collections USING(coll_id)"""
+            async with conn.execute(sql, (top_num,)) as cursor:
+                result = await cursor.fetchall()
+                for res in result:
+                    yield res
+            # return result
+
 
 if __name__ == "__main__":
-    result = asyncio.run(AnalyticBlitz().get_top7_coll())
-    print(result)
+    result = asyncio.run(AnalyticBlitz().get_top_blitz_v2(3))
+    for r in result:
+        print(r)
     #
     # for r in result:
     #     print(r)

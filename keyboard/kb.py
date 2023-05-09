@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 """Кнопка подписаться на рассылку отчетов"""
-subscribe_btn = InlineKeyboardButton(text='📊 Subscribe', callback_data='subscribe')
+subscribe_btn = InlineKeyboardButton(text='📝 Subscribe', callback_data='subscribe')
 """Кнопка для получения отчёт прямо сейчас"""
 get_report_bnt = InlineKeyboardButton(text='📊 Get report', callback_data='get_report')
 """Кнопка показать пример отчёта"""

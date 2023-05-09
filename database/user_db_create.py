@@ -84,6 +84,41 @@ class UserDB:
                         action TEXT,
                         date_add DATETIME,
                         FOREIGN KEY (user_id) REFERENCES users(user_id) 
+                        );
+                    CREATE TABLE IF NOT EXISTS addrs_monitor(
+                        user_id INTEGER,
+                        addr_monitor TEXT,
+                        monitor_flag INTEGER,
+                        date_add TEXT,
+                        UNIQUE (user_id, addr_monitor),
+                        FOREIGN KEY (user_id) REFERENCES users(user_id)
+                        ON DELETE CASCADE
+                        );
+                    CREATE TABLE IF NOT EXISTS sales_monitoring(
+                        monitor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        addr_monitor TEXT,
+                        coll_addr TEXT,
+                        coll_name TEXT,
+                        token_name TEXT,
+                        token_num INTEGER,
+                        buyer_addr TEXT,
+                        buyer_name TEXT,
+                        price_stars INTEGER,
+                        price_usd REAL,
+                        date_create TEXT,
+                        date_add TEXT,
+                        UNIQUE (coll_addr, token_num, date_create)
+                        );
+                    CREATE TABLE IF NOT EXISTS send_monitor_info(
+                        user_id INTEGER,
+                        monitor_id INTEGER,
+                        send_flag INTEGER,
+                        date_add TEXT,
+                        UNIQUE (user_id, monitor_id),
+                        FOREIGN KEY (user_id) REFERENCES users(user_id)
+                        ON DELETE CASCADE,
+                        FOREIGN KEY (monitor_id) REFERENCES sales_monitoring(monitor_id)
+                        ON DELETE CASCADE
                         );"""
             await conn.executescript(sql)
             await conn.commit()

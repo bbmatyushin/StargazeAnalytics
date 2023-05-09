@@ -4,14 +4,14 @@ from database.user_db_create import UserDB
 
 
 class UserDBInsert(UserDB):
-    async def insert_users(self, insert_data: list):
+    async def insert_users(self, data_insert: list):
         """Вставляем данные нового пользователя
-        insert_data = [user_id, username, first_name, last_name, language_code]"""
+        data_insert = [user_id, username, first_name, last_name, language_code]"""
         async with self.connector as conn:
             sql = """INSERT INTO users(
                     user_id, username, first_name, last_name, language_code, date_add)
                     VALUES(?, ?, ?, ?, ?, DATETIME())"""
-            await conn.execute(sql, insert_data)
+            await conn.execute(sql, data_insert)
             await conn.commit()
 
     async def insert_daily_reports(self, message: str):
@@ -100,7 +100,37 @@ class UserDBInsert(UserDB):
             await conn.execute(sql, (user_id, action_name,))
             await conn.commit()
 
+    #TODO: ############  MONITORING INSERT  ###############
+    async def insert_sales_monitoring(self, data_insert: list):
+        """Заполняем данными таблицу мониторинга продаж
+        data_insert = [addr_monitor, coll_addr, coll_name, token_name, token_num,
+        buyer_addr, buyer_name, price_stars, price_usd, date_create, date_add]"""
+        async with self.connector as conn:
+            sql = """INSERT INTO sales_monitoring(
+                    addr_monitor, coll_addr, coll_name, token_name, token_num,
+                    buyer_addr, buyer_name, price_stars, price_usd, date_create, date_add)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATETIME())"""
+            await conn.execute(sql, data_insert)
+            await conn.commit()
+
+    async def insert_send_monitor_info(self, user_id, monitor_id):
+        """Вставляем данные об отправке сообщения о продаже.
+        Т.е. бот отправляет сообщение о продаже и заполняется эта таблица"""
+        async with self.connector as conn:
+            sql = """INSERT INTO send_monitor_info(user_id, monitor_id, send_flag, date_add)
+                    VALUES(?, ?, 1, DATETIME())"""
+            await conn.execute(sql, (user_id, monitor_id,))
+            await conn.commit()
+
+    async def insert_addrs_monitor(self, user_id, addr_monitor):
+        """Добавление пользователями адресов для отслеживания"""
+        async with self.connector as conn:
+            sql = """INSERT INTO addrs_monitor(user_id, addr_monitor, monitor_flag, date_add)
+                    VALUES(?, ?, 1, DATETIME())"""
+            await conn.execute(sql, (user_id, addr_monitor,))
+            await conn.commit()
+
 
 if __name__ == "__main__":
-    insert_data = [1, 'username', 'first_name', 'last_name', 'language_code']
+    data_insert = [1, 'username', 'first_name', 'last_name', 'language_code']
     asyncio.run(UserDBInsert().insert_admins(1916570670))
