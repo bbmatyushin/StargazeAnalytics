@@ -12,8 +12,10 @@ from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from usefultools.create_bot import bot, dp
 from database.user_db_select import UserDBSelect, UserDB
 from database.user_db_insert import UserDBInsert
+from database.db_select import SelectQuery
 from reports.report_24h import get_daily_report
 from reports.report_blitz import get_blitz_report
+from reports.report_wallets import WalletsReport
 
 from handlers import main, commands
 
@@ -21,7 +23,7 @@ from handlers import main, commands
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
 
 
-@aiocron.crontab('0 */2 * * *')
+@aiocron.crontab('0 */1 * * *')
 # @aiocron.crontab('*/1 * * * *')
 async def send_blitz_report():
     """Ограничение - только для админов"""
@@ -70,7 +72,7 @@ async def send_daily_report():
             except aiosqlite.IntegrityError as err:
                 logging.error(err)
 
-#
+
 # @aiocron.crontab('* * * * * */20')
 # async def send_weekly_report():
 #     logging.info(f"Send WEEKLY report at {datetime.now()}")
@@ -81,6 +83,45 @@ async def send_daily_report():
 # async def send_monthly_report():
 #     logging.info(f"Send MONTHLY report at {datetime.now()}")
 #     print('MONTHLY report!')
+
+
+@aiocron.crontab('*/2 * * * *')
+async def addrs_monitoring():
+    """Мотиторинг за продажами кошельков"""
+    addrs_monitor_list = await UserDBSelect().select_addrs_monitoring()  # адреса для отслеживания
+    if addrs_monitor_list:
+        for addr in addrs_monitor_list:
+            async for data_insert in SelectQuery().select_addr_monitoring(owner_addr=addr):  # получаем данные из другой БД для дальнейшей их отправки
+                if data_insert:  # если что-то есть, то работаем с этими данными
+                    try:
+                        await UserDBInsert().insert_sales_monitoring(data_insert)  # вставляем эти данные в БД users в свою таблицу
+                        monitor_id = await UserDBSelect().select_last_monitor_id() # получаем номер последнего строки с новыми данными
+                        output_msg = await WalletsReport().wallet_sales_report(owner_addr=addr)  # тут формируется сообщение для отправки
+                        users = await UserDBSelect().select_users_monitoring(addr_monitor=addr)  # список пользоватлей, кот.следят за этим адресом
+                        for user in users:
+                            try:
+                                await bot.send_message(chat_id=user, text=output_msg,
+                                                       parse_mode='HTML')  # отправляем каждому сообщение о сделке
+                                try:  # в таблицу send_monitor_info вставляем данные об отправке сообщения
+                                    await UserDBInsert().insert_send_monitor_info(user_id=user, monitor_id=monitor_id)
+                                except aiosqlite.IntegrityError as err:
+                                    logging.error(err)
+                            except ChatNotFound as err:
+                                logging.warning(err)
+                                try:  # добавляем пользователя как неактивного
+                                    await UserDBInsert().insert_inactive_users(user_id=user)
+                                except aiosqlite.IntegrityError as err:
+                                    logging.error(err)
+                            except BotBlocked as err:
+                                logging.warning(err)
+                                try:  # добавляем пользователя как неактивного
+                                    await UserDBInsert().insert_inactive_users(user_id=user)
+                                except aiosqlite.IntegrityError as err:
+                                    logging.error(err)
+                    except aiosqlite.IntegrityError as err:
+                        logging.error(err)
+                else:
+                    logging.info('No DATA to address monitoring')
 
 
 async def on_startup(_):

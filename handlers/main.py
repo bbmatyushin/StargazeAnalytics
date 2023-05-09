@@ -32,13 +32,13 @@ async def send_example_report(callback: CallbackQuery):
     user_id, username, first_name, last_name, language_code = \
         callback.from_user.id, callback.from_user.username, callback.from_user.first_name, \
         callback.from_user.last_name, callback.from_user.language_code
-    insert_data = [user_id, username, first_name, last_name, language_code]
+    data_insert = [user_id, username, first_name, last_name, language_code]
     try:  # добавляем пользователя в БД
-        await UserDBInsert().insert_users(insert_data=insert_data)
+        await UserDBInsert().insert_users(data_insert=data_insert)
         admins = await UserDBSelect().select_admins()
         for admin in admins:
             try:  # оповещеть о новом пользователе
-                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{insert_data}',
+                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{data_insert}',
                                        parse_mode='HTML')
             except ChatNotFound:
                 continue
@@ -59,13 +59,13 @@ async def subscribe_report(callback: CallbackQuery):
     user_id, username, first_name, last_name, language_code = \
         callback.from_user.id, callback.from_user.username, callback.from_user.first_name, \
             callback.from_user.last_name, callback.from_user.language_code
-    insert_data = [user_id, username, first_name, last_name, language_code]
+    data_insert = [user_id, username, first_name, last_name, language_code]
     try:  # добавляем пользователя в БД
-        await UserDBInsert().insert_users(insert_data=insert_data)
+        await UserDBInsert().insert_users(data_insert=data_insert)
         admins = await UserDBSelect().select_admins()
         for admin in admins:
             try:  # оповещеть о новом пользователе
-                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{insert_data}',
+                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{data_insert}',
                                        parse_mode='HTML')
             except ChatNotFound:
                 continue

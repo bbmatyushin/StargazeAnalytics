@@ -228,7 +228,7 @@ if __name__ == "__main__":
     def job():
         asyncio.run(GetDataStargaze().run())
 
-    schedule.every(120).seconds.do(job)  # запускает чере минуту, после того как завершится job
+    schedule.every(120).seconds.do(job)  # запускает через 2 минуты, после того как завершится job
 
     while True:
         schedule.run_pending()
