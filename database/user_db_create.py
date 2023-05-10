@@ -90,7 +90,7 @@ class UserDB:
                         addr_monitor TEXT,
                         monitor_flag INTEGER,
                         date_add TEXT,
-                        UNIQUE (user_id, addr_monitor),
+                        UNIQUE (user_id, addr_monitor, monitor_flag),
                         FOREIGN KEY (user_id) REFERENCES users(user_id)
                         ON DELETE CASCADE
                         );
@@ -109,12 +109,28 @@ class UserDB:
                         date_add TEXT,
                         UNIQUE (coll_addr, token_num, date_create)
                         );
+                    CREATE TABLE IF NOT EXISTS buys_monitoring(
+                        monitor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        addr_monitor TEXT,
+                        coll_addr TEXT,
+                        coll_name TEXT,
+                        token_name TEXT,
+                        token_num INTEGER,
+                        seller_addr TEXT,
+                        seller_name TEXT,
+                        price_stars INTEGER,
+                        price_usd REAL,
+                        date_create TEXT,
+                        date_add TEXT,
+                        UNIQUE (coll_addr, token_num, date_create)
+                        );
                     CREATE TABLE IF NOT EXISTS send_monitor_info(
                         user_id INTEGER,
                         monitor_id INTEGER,
+                        action TEXT,
                         send_flag INTEGER,
                         date_add TEXT,
-                        UNIQUE (user_id, monitor_id),
+                        UNIQUE (user_id, monitor_id, action),
                         FOREIGN KEY (user_id) REFERENCES users(user_id)
                         ON DELETE CASCADE,
                         FOREIGN KEY (monitor_id) REFERENCES sales_monitoring(monitor_id)

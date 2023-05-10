@@ -41,7 +41,7 @@ class Analytics24H(MainDB):
     async def volum_top_num(self, top_num: int):
         """Объемы продаж и количество сделок
         за последние 24 часа с разбивкой по ТОП-5 коллекциям
-        top_num - сколько выводить из ТОПА (3б 5 и т.д.)"""
+        top_num - сколько выводить из ТОПА (3, 5 и т.д.)"""
         async with self.connector as conn:
             sql = """WITH t1 AS(
                         SELECT sales.coll_id as coll_id, coll_name, coll_addr,
@@ -448,9 +448,126 @@ class AnalyticBlitz(MainDB):
                     yield res
             # return result
 
+    async def get_floor_dif(self):
+        """Получаем коллекции у которых флор менядся последние 5
+        промежутков времени по 12 часов. Сравниваем на сколько изменилась цена."""
+        async with self.connector as conn:
+            sql = """WITH t1 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_1
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-12 hour') AND DATETIME()
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t2 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_2,
+                        '1' AS flag
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-24 hour')
+                            AND DATETIME(DATETIME(), '-12 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t3 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_3
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-36 hour')
+                            AND DATETIME(DATETIME(), '-24 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t4 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_4
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-48 hour')
+                            AND DATETIME(DATETIME(), '-36 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t5 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_5
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-60 hour')
+                            AND DATETIME(DATETIME(), '-48 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t6 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_6
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-72 hour')
+                            AND DATETIME(DATETIME(), '-60 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t7 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_7
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-84 hour')
+                            AND DATETIME(DATETIME(), '-72 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t8 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_8
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-96 hour')
+                            AND DATETIME(DATETIME(), '-84 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        ),
+                    t9 AS(SELECT coll_id, 
+                        ROUND(AVG(floor_price), 2) AS avg_floor_9
+                        FROM floors
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-108 hour')
+                            AND DATETIME(DATETIME(), '-96 hour')
+                        GROUP BY coll_id
+                        ORDER BY date_add DESC
+                        )
+                    SELECT coll_addr, coll_name, avg_floor_1,
+                        ROUND((avg_floor_1/avg_floor_2 - 1) * 100, 2) 'floor_2, %',
+                        ROUND((avg_floor_1/avg_floor_3 - 1) * 100, 2) 'floor_3, %',
+                        ROUND((avg_floor_1/avg_floor_4 - 1) * 100, 2) 'floor_4, %',
+                        ROUND((avg_floor_1/avg_floor_5 - 1) * 100, 2) 'floor_5, %',
+                        CASE
+                            WHEN avg_floor_6 IS NULL THEN NULL
+                            ELSE(ROUND((avg_floor_1/avg_floor_6 - 1) * 100, 2))
+                        END 'floor_6, %',
+                        CASE
+                            WHEN avg_floor_7 IS NULL THEN NULL
+                            ELSE(ROUND((avg_floor_1/avg_floor_7 - 1) * 100, 2))
+                        END 'floor_7, %',
+                        CASE
+                            WHEN avg_floor_8 IS NULL THEN NULL
+                            ELSE(ROUND((avg_floor_1/avg_floor_8 - 1) * 100, 2))
+                        END 'floor_8, %',
+                        CASE
+                            WHEN avg_floor_9 IS NULL THEN NULL
+                            ELSE(ROUND((avg_floor_1/avg_floor_9 - 1) * 100, 2))
+                        END 'floor_9, %'
+                    FROM t1
+                        LEFT JOIN t2 USING(coll_id)
+                        LEFT JOIN t3 USING(coll_id)
+                        LEFT JOIN t4 USING(coll_id)
+                        LEFT JOIN t5 USING(coll_id)
+                        LEFT JOIN t6 USING(coll_id)
+                        LEFT JOIN t7 USING(coll_id)
+                        LEFT JOIN t8 USING(coll_id)
+                        LEFT JOIN t9 USING(coll_id)
+                        LEFT JOIN collections USING(coll_id)
+                    WHERE avg_floor_2 IS NOT NULL 
+                        AND avg_floor_3 IS NOT NULL
+                        AND avg_floor_4 IS NOT NULL
+                        AND avg_floor_5 IS NOT NULL"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchall()
+                for res in result:
+                    yield res
+                # return result
+
 
 if __name__ == "__main__":
-    result = asyncio.run(AnalyticBlitz().get_top_blitz_v2(3))
+    result = asyncio.run(AnalyticBlitz().get_floor_dif())
     for r in result:
         print(r)
     #

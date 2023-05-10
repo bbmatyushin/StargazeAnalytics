@@ -29,37 +29,6 @@ class BlitzReport(AnalyticBlitz):
             delta_stars_4h = await self.get_delta(delta_stars_4h)
             delta_stars_6h = await self.get_delta(delta_stars_6h)
             delta_stars_10h = await self.get_delta(delta_stars_10h)
-            # if isinstance(delta_stars_1h, float):
-            #     delta_stars_1h = f"+{delta_stars_1h}% 📈" if delta_stars_1h > 0 else \
-            #         f"{delta_stars_1h}%" if delta_stars_1h == 0 else f"{delta_stars_1h}% 📉"
-            # if isinstance(delta_stars_2h, float):
-            #     delta_stars_2h = f"+{delta_stars_2h}% 📈" if delta_stars_2h > 0 else \
-            #         f"{delta_stars_2h}%" if delta_stars_2h == 0 else f"{delta_stars_2h}% 📉"
-            # if isinstance(delta_stars_4h, float):
-            #     delta_stars_4h = f"+{delta_stars_4h}% 📈" if delta_stars_4h > 0 else \
-            #         f"{delta_stars_4h}%" if delta_stars_4h == 0 else f"{delta_stars_4h}% 📉"
-            # if isinstance(delta_stars_6h, float):
-            #     delta_stars_6h = f"+{delta_stars_6h}% 📈" if delta_stars_6h > 0 else \
-            #         f"{delta_stars_6h}%" if delta_stars_6h == 0 else f"{delta_stars_6h}% 📉"
-            # if isinstance(delta_stars_10h, float):
-            #     delta_stars_10h = f"+{delta_stars_10h}% 📈" if delta_stars_10h > 0 else \
-            #         f"{delta_stars_10h}%" if delta_stars_10h == 0 else f"{delta_stars_10h}% 📉"
-            # if isinstance(delta_count_1h, float):
-            #     delta_count_1h = f"+{delta_count_1h}% 📈" if delta_count_1h > 0 else \
-            #         f"{delta_count_1h}%" if delta_count_1h == 0 else f"{delta_count_1h}% 📉"
-            # if isinstance(delta_count_2h, float):
-            #     delta_count_2h = f"+{delta_count_2h}% 📈" if delta_count_2h > 0 else \
-            #         f"{delta_count_2h}%" if delta_count_2h == 0 else f"{delta_count_2h}% 📉"
-            # if isinstance(delta_count_4h, float):
-            #     delta_count_4h = f"+{delta_count_4h}% 📈" if delta_count_4h > 0 else \
-            #         f"{delta_count_4h}%" if delta_count_4h == 0 else f"{delta_count_4h}% 📉"
-            # if isinstance(delta_count_6h, float):
-            #     delta_count_6h = f"+{delta_count_6h}% 📈" if delta_count_6h > 0 else \
-            #         f"{delta_count_6h}%" if delta_count_6h == 0 else f"{delta_count_6h}% 📉"
-            # if isinstance(delta_count_10h, float):
-            #     delta_count_10h = f"+{delta_count_10h}% 📈" if delta_count_10h > 0 else \
-            #         f"{delta_count_10h}%" if delta_count_10h == 0 else f"{delta_count_10h}% 📉"
-                
             output_ru = f"\t{num}. <a href='{url_sg}{coll_addr}'><b>{coll_name}</b></a>\n" \
                         f"\t\t🔸 <b>Vol.</b>: {sum_stars_t1:,} STARS \n" \
                         f"\t\t\t<b>[1h]</b> {delta_stars_1h}, <b>[2h]</b> {delta_stars_2h},\n" \
@@ -116,22 +85,55 @@ class BlitzReport(AnalyticBlitz):
                         f"\t<b>Floor</b>: {floor_price:,} STARS\n" \
                         f"\t\t{delta_floor2} <b>r2</b>, {delta_floor3} <b>r3</b>\n" \
                         f"\t\t{delta_floor4} <b>r4</b>, {delta_floor5} <b>r5</b>\n" \
-                        f"<a href='{url_meta}'><em>{'vie on metabase':*^5}</em></a>\n"
+                        f"<a href='{url_meta}'><em>{'view on metabase':*^5}</em></a>\n"
             report_v2_ru.append(output_ru)
             num += 1
         return "".join(report_v2_ru)
 
-
+    async def report_floor_dif(self):
+        """Отчет по изменению цены флора"""
+        url_sg: str = 'https://www.stargaze.zone/marketplace/'
+        url_meta_head: str = 'https://metabase.constellations.zone/public/dashboard/8281228d-66c0-42d9-83d6-f7e07d05728a?collection='
+        url_meta_tail: str = '&chart_dates=past7days~#theme=night'
+        report: list = []
+        head: str = "#floor_report\n\n" \
+                    "📊 <b>Аналитика цены floor</b>\n\n"
+        report.append(head)
+        async for data in self.get_floor_dif():
+            coll_addr, coll_name, floor, floor_2, floor_3, floor_4, floor_5, floor_6, floor_7, floor_8, floor_9 = \
+                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], \
+                data[9], data[10]
+            floor_dif_2 = await self.get_delta(floor_2)
+            floor_dif_3 = await self.get_delta(floor_3)
+            floor_dif_4 = await self.get_delta(floor_4)
+            floor_dif_5 = await self.get_delta(floor_5)
+            floor_dif_6 = await self.get_delta(floor_6)
+            floor_dif_7 = await self.get_delta(floor_7)
+            floor_dif_8 = await self.get_delta(floor_8)
+            floor_dif_9 = await self.get_delta(floor_9)
+            url_coll: str = f"{url_sg}{coll_addr}"
+            url_meta = f'{url_meta_head}{coll_addr}{url_meta_tail}'
+            output_ru: str = f"\n🔸 <a href='{url_coll}'><b>{coll_name}</b></a>\n" \
+                             f"<b>AVG Floor</b>: {floor} STARS\n" \
+                             f"<b>12H</b> {floor_dif_2}, <b>24H</b> {floor_dif_3},\n" \
+                             f"<b>36H</b> {floor_dif_4}, <b>48H</b> {floor_dif_5},\n" \
+                             f"<b>60H</b> {floor_dif_6}, <b>72H</b> {floor_dif_7},\n" \
+                             f"<b>84H</b> {floor_dif_8}, <b>96H</b> {floor_dif_9},\n" \
+                             f"<a href='{url_meta}'><em>{'view on metabase':*^5}</em></a>\n"
+            report.append(output_ru)
+        return "".join(report[:4096])
 
 
 async def get_blitz_report():
     # task_1 = asyncio.create_task(BlitzReport().report_top_blitz_v1(7))
-    task_2 = asyncio.create_task(BlitzReport().report_top_blitz_v2(7))
+    # task_2 = asyncio.create_task(BlitzReport().report_top_blitz_v2(7))
+    task_3 = asyncio.create_task(BlitzReport().report_floor_dif())
     # report_1 = await task_1
-    report_2 = await task_2
-    header = "#1H_report\n\n" \
-             "📊 <b>Аналитика Stargaze за последний 1Ч</b>\n\n"
-    return header + report_2
+    # report_2 = await task_2
+    report_3 = await task_3
+    # header = "#1H_report\n\n" \
+    #          "📊 <b>Аналитика Stargaze за последний 1Ч</b>\n\n"
+    return report_3
 
 
 if __name__ == "__main__":
