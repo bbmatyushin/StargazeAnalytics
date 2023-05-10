@@ -92,6 +92,17 @@ class UserDBSelect(UserDB):
                 result = await cursor.fetchall()
                 return [el[0] for el in result]
 
+    async def select_user_addrs_monitoring(self, user_id):
+        """Aдреса для мониторинга отдельного пользователя"""
+        async with self.connector as conn:
+            sql = """SELECT addr_monitor FROM addrs_monitor
+                    WHERE user_id = ?
+                        AND monitor_flag = 1
+                    ORDER BY date_add"""
+            async with conn.execute(sql, (user_id,)) as cursor:
+                result = await cursor.fetchall()
+                return [el[0] for el in result]
+
     async def select_users_monitoring(self, addr_monitor):
         """Пользователи которые следят за выбранным адресом"""
         async with self.connector as conn:
@@ -105,25 +116,44 @@ class UserDBSelect(UserDB):
         """Кол-во адресов за которыми следит пользователь (МАКС. - 5шт.)"""
         async with self.connector as conn:
             sql = """SELECT COUNT(addr_monitor) FROM addrs_monitor
-                    WHERE user_id = ?"""
+                    WHERE user_id = ?
+                        AND monitor_flag = 1"""
             async with conn.execute(sql, (user_id,)) as cursor:
                 result = await cursor.fetchone()
                 return result[0] if result else None
 
-    async def select_monitoring_info(self, addr_monitor):
-        """ИНФА для сообщения о свершивсейся сделки"""
+    async def select_sales_monitoring_info(self, monitor_id: int, addr_monitor: str):
+        """ИНФА для сообщения о свершивсейся сделки - ПРОДАЖИ"""
+        # monitor_ids.append(addr_monitor)
+        # data = monitor_ids
         async with self.connector as conn:
-            sql = """SELECT addr_monitor, coll_addr, coll_name, token_name, token_num,
+            sql = f"""SELECT addr_monitor, coll_addr, coll_name, token_name, token_num,
                         buyer_addr, buyer_name, price_stars, price_usd, DATETIME(date_create) AS dt
                     FROM sales_monitoring
-                    WHERE addr_monitor = ?
-                    ORDER BY date_create DESC
-                    LIMIT 1"""
-            async with conn.execute(sql, (addr_monitor,)) as cursor:
+                    WHERE monitor_id = ?
+                        AND addr_monitor = ?
+                    ORDER BY date_create"""
+            async with conn.execute(sql, (monitor_id, addr_monitor,)) as cursor:
+                result = await cursor.fetchone()
+                return result if result else None
+
+    async def select_buys_monitoring_info(self, monitor_id: int, addr_monitor: str):
+        """ИНФА для сообщения о свершивсейся сделки - ПРОДАЖИ"""
+        # monitor_ids.append(addr_monitor)
+        # data = monitor_ids
+        async with self.connector as conn:
+            sql = f"""SELECT addr_monitor, coll_addr, coll_name, token_name, token_num,
+                        seller_addr, seller_name, price_stars, price_usd, DATETIME(date_create) AS dt
+                    FROM buys_monitoring
+                    WHERE monitor_id = ?
+                        AND addr_monitor = ?
+                    ORDER BY date_create"""
+            async with conn.execute(sql, (monitor_id, addr_monitor,)) as cursor:
                 result = await cursor.fetchone()
                 return result if result else None
 
     async def select_last_monitor_id(self):
+        """id последней записи в sales_monitoring"""
         async with self.connector as conn:
             sql = """SELECT monitor_id FROM sales_monitoring
                     ORDER BY date_add DESC LIMIT 1"""
@@ -131,7 +161,36 @@ class UserDBSelect(UserDB):
                 result = await cursor.fetchone()
                 return result[0] if result else None
 
+    async def select_no_send_sales_monitor_id(self):
+        """id неотправленных активностей по ПРОДАЖАМ"""
+        async with self.connector as conn:
+            sql = """SELECT monitor_id FROM sales_monitoring
+                    WHERE monitor_id NOT IN (
+                        SELECT monitor_id
+                        FROM send_monitor_info
+                        WHERE action = 'sale') 
+                    ORDER BY date_create DESC"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchall()
+                return [el[0] for el in result]
+
+    async def select_no_send_buys_monitor_id(self):
+        """id неотправленных активностей по ПОКУПКАМ"""
+        async with self.connector as conn:
+            sql = """SELECT monitor_id FROM sales_monitoring
+                    WHERE monitor_id NOT IN (
+                        SELECT monitor_id
+                        FROM send_monitor_info
+                        WHERE action = 'buy') 
+                    ORDER BY date_create DESC"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchall()
+                return [el[0] for el in result]
+
 
 if __name__ == "__main__":
-    result = asyncio.run(UserDBSelect().select_last_monitor_id())
-    print(result)
+    monitors_ids = 7
+    addr_monitor = 'stars1654yth3nm628ej2x4tm6farrf0h7wju7c3cyp6'
+    result = asyncio.run(UserDBSelect().select_active_users())
+    for r in result:
+        print(r)

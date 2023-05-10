@@ -102,7 +102,7 @@ class UserDBInsert(UserDB):
 
     #TODO: ############  MONITORING INSERT  ###############
     async def insert_sales_monitoring(self, data_insert: list):
-        """Заполняем данными таблицу мониторинга продаж
+        """Заполняем данными таблицу мониторинга ПРОДАЖ
         data_insert = [addr_monitor, coll_addr, coll_name, token_name, token_num,
         buyer_addr, buyer_name, price_stars, price_usd, date_create, date_add]"""
         async with self.connector as conn:
@@ -113,13 +113,25 @@ class UserDBInsert(UserDB):
             await conn.execute(sql, data_insert)
             await conn.commit()
 
-    async def insert_send_monitor_info(self, user_id, monitor_id):
+    async def insert_buys_monitoring(self, data_insert: list):
+        """Заполняем данными таблицу мониторинга ПОКУПОК
+        data_insert = [addr_monitor, coll_addr, coll_name, token_name, token_num,
+        seller_addr, seller_name, price_stars, price_usd, date_create, date_add]"""
+        async with self.connector as conn:
+            sql = """INSERT INTO buys_monitoring(
+                    addr_monitor, coll_addr, coll_name, token_name, token_num,
+                    seller_addr, seller_name, price_stars, price_usd, date_create, date_add)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATETIME())"""
+            await conn.execute(sql, data_insert)
+            await conn.commit()
+
+    async def insert_send_monitor_info(self, user_id: int, monitor_id: int, action: str):
         """Вставляем данные об отправке сообщения о продаже.
         Т.е. бот отправляет сообщение о продаже и заполняется эта таблица"""
         async with self.connector as conn:
-            sql = """INSERT INTO send_monitor_info(user_id, monitor_id, send_flag, date_add)
-                    VALUES(?, ?, 1, DATETIME())"""
-            await conn.execute(sql, (user_id, monitor_id,))
+            sql = """INSERT INTO send_monitor_info(user_id, monitor_id, action, send_flag, date_add)
+                    VALUES(?, ?, ?, 1, DATETIME())"""
+            await conn.execute(sql, (user_id, monitor_id, action))
             await conn.commit()
 
     async def insert_addrs_monitor(self, user_id, addr_monitor):

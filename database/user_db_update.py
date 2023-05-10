@@ -10,3 +10,13 @@ class UserDBUpdate(UserDB):
                     WHERE user_id = ?"""
             await conn.execute(sql, (flag, user_id,))
             await conn.commit()
+
+    async def upd_addrs_monitor(self, user_id: int, addr_monitor: str):
+        """Снимаем флаг мониторинга за кошельком"""
+        async with self.connector as conn:
+            sql = """UPDATE addrs_monitor
+                    SET monitor_flag = 0
+                    WHERE user_id = ?
+                        AND addr_monitor = ?"""
+            await conn.execute(sql, (user_id, addr_monitor,))
+            await conn.commit()

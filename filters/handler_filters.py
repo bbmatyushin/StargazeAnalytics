@@ -24,8 +24,12 @@ class IsAdminMsg:
     def __init__(self):
         self.admins_list = UserDBSelect().select_admins()
 
+    async def get_admins(self):
+        return await UserDBSelect().select_admins()
+
     def __call__(self, msg: Message):
-        return msg.from_user.id in self.admins_list
+        admins_list = self.get_admins()
+        return msg.from_user.id in admins_list
 
 
 class IsAdminCbq(IsAdminMsg):
@@ -33,3 +37,7 @@ class IsAdminCbq(IsAdminMsg):
     def __call__(self, callbakc: CallbackQuery):
         return callbakc.from_user.id in self.admins_list
 
+
+if __name__ == "__main__":
+    a = IsAdminMsg().get_admins()
+    print(a)

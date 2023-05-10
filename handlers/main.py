@@ -20,6 +20,24 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logg
 
 @dp.message_handler(commands=['start'])
 async def command_start(msg: Message):
+    user_id, username, first_name, last_name, language_code = \
+        msg.from_user.id, msg.from_user.username, msg.from_user.first_name, \
+            msg.from_user.last_name, msg.from_user.language_code
+    data_insert = [user_id, username, first_name, last_name, language_code]
+    try:  # добавляем пользователя в БД
+        await UserDBInsert().insert_users(data_insert=data_insert)
+        admins = await UserDBSelect().select_admins()
+        for admin in admins:
+            try:  # оповещеть о новом пользователе
+                await bot.send_message(chat_id=admin,
+                                       text=f'{LEXICON_RU_HTML["new_user"]}{data_insert}',
+                                       parse_mode='HTML')
+            except ChatNotFound:
+                continue
+            except BotBlocked:
+                continue
+    except aiosqlite.IntegrityError as err:
+        logging.warning(err)
     await bot.delete_message(chat_id=msg.from_user.id, message_id=msg.message_id)
     await msg.answer(text=LEXICON_RU_HTML['/start'], parse_mode='HTML')
     await asyncio.sleep(1)
@@ -29,23 +47,6 @@ async def command_start(msg: Message):
 
 @dp.callback_query_handler(text='example_report', state="*")
 async def send_example_report(callback: CallbackQuery):
-    user_id, username, first_name, last_name, language_code = \
-        callback.from_user.id, callback.from_user.username, callback.from_user.first_name, \
-        callback.from_user.last_name, callback.from_user.language_code
-    data_insert = [user_id, username, first_name, last_name, language_code]
-    try:  # добавляем пользователя в БД
-        await UserDBInsert().insert_users(data_insert=data_insert)
-        admins = await UserDBSelect().select_admins()
-        for admin in admins:
-            try:  # оповещеть о новом пользователе
-                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{data_insert}',
-                                       parse_mode='HTML')
-            except ChatNotFound:
-                continue
-            except BotBlocked:
-                continue
-    except aiosqlite.IntegrityError as err:
-        logging.warning(err)
     text_ru = await get_daily_report()
     await callback.message.answer(text=text_ru, parse_mode="HTML")
     await callback.answer()
@@ -56,23 +57,7 @@ async def send_example_report(callback: CallbackQuery):
 
 @dp.callback_query_handler(text='subscribe', state="*")
 async def subscribe_report(callback: CallbackQuery):
-    user_id, username, first_name, last_name, language_code = \
-        callback.from_user.id, callback.from_user.username, callback.from_user.first_name, \
-            callback.from_user.last_name, callback.from_user.language_code
-    data_insert = [user_id, username, first_name, last_name, language_code]
-    try:  # добавляем пользователя в БД
-        await UserDBInsert().insert_users(data_insert=data_insert)
-        admins = await UserDBSelect().select_admins()
-        for admin in admins:
-            try:  # оповещеть о новом пользователе
-                await bot.send_message(chat_id=admin, text=f'{LEXICON_RU_HTML["new_user"]}{data_insert}',
-                                       parse_mode='HTML')
-            except ChatNotFound:
-                continue
-            except BotBlocked:
-                continue
-    except aiosqlite.IntegrityError as err:
-        logging.warning(err)
+    user_id = callback.from_user.id
     try:  # ставим флаг, что пользователь подписан
         await UserDBInsert().insert_users_subscribe(user_id=user_id)
     except aiosqlite.IntegrityError as err:
@@ -86,8 +71,10 @@ async def subscribe_report(callback: CallbackQuery):
 async def get_report_callback(callback: CallbackQuery):
     if callback.from_user.id in await UserDBSelect().select_subscribe_users():
         text_ru = await get_daily_report()
-        await callback.message.answer(text=text_ru, parse_mode="HTML",
-                                      reply_markup=kb.ikb_get_report)
+        await callback.message.answer(text=text_ru, parse_mode="HTML")
+    else:
+        await callback.message.answer(text=LEXICON_RU_HTML["no_subscribe"],
+                                      parse_mode='HTML')
     await callback.answer()
 
 
