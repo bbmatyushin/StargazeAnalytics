@@ -10,6 +10,8 @@ from lexicon.lexicon_upd import LEXICON_UPD_RU
 from lexicon.lexicon_ru import LEXICON_RU_HTML
 from handlers.states import FSMAdmin
 
+from reports.report_blitz import get_blitz_report
+
 
 @dp.message_handler(commands=['send_all'], state="*")
 async def send_msg_all_users_1(msg: Message, state: FSMContext):
@@ -42,6 +44,21 @@ async def send_msg_all_users_2(msg: Message, state: FSMContext):
                      f"{''.join(users_list)}"
     await msg.answer(text=text_for_admin)
     await state.finish()
+
+
+@dp.message_handler(commands='floor_dif', state="*")
+async def admin_send_blitz_report(msg: Message):
+    """Ограничение - только для админов"""
+    report = await get_blitz_report()
+    report_text_ru = "".join(report)[:4096]
+    admins = await UserDBSelect().select_admins_subscribe()
+    if msg.from_user.id in admins:
+        try:
+            await msg.answer(text=report_text_ru, parse_mode='HTML')
+        except ChatNotFound:
+            pass
+        except BotBlocked:
+            pass
 
 
 @dp.message_handler(commands=['admin'], state="*")

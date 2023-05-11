@@ -46,7 +46,8 @@ def get_user_addrs_monitor(addrs_list: list):
     """Инлайн кнопки с адресами для мониторинга"""
     ikb_addrs_monitor = InlineKeyboardMarkup(row_width=1)
     for addr in addrs_list:
-        addr_text = f"{addr[:12]}...{addr[-12:]}"
-        addr_btn = InlineKeyboardButton(text=addr_text, callback_data=addr)
+        # addr[1] это owner_name
+        addr_text = addr[1] if addr[1] else f"{addr[0][:12]}...{addr[0][-12:]}"
+        addr_btn = InlineKeyboardButton(text=addr_text, callback_data=addr[0])
         ikb_addrs_monitor.add(addr_btn)
     return ikb_addrs_monitor.add(back_wallet_btn)

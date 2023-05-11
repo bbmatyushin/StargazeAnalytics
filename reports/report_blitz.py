@@ -95,11 +95,12 @@ class BlitzReport(AnalyticBlitz):
         url_sg: str = 'https://www.stargaze.zone/marketplace/'
         url_meta_head: str = 'https://metabase.constellations.zone/public/dashboard/8281228d-66c0-42d9-83d6-f7e07d05728a?collection='
         url_meta_tail: str = '&chart_dates=past7days~#theme=night'
+        tf = 8
         report: list = []
         head: str = "#floor_report\n\n" \
-                    "📊 <b>Аналитика цены floor</b>\n\n"
+                    f"📊 <b>Аналитика цены floor за {tf}Ч</b>\n\n"
         report.append(head)
-        async for data in self.get_floor_dif():
+        async for data in self.get_floor_dif(tf=tf):
             coll_addr, coll_name, floor, floor_2, floor_3, floor_4, floor_5, floor_6, floor_7, floor_8, floor_9 = \
                 data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], \
                 data[9], data[10]
@@ -115,13 +116,14 @@ class BlitzReport(AnalyticBlitz):
             url_meta = f'{url_meta_head}{coll_addr}{url_meta_tail}'
             output_ru: str = f"\n🔸 <a href='{url_coll}'><b>{coll_name}</b></a>\n" \
                              f"<b>AVG Floor</b>: {floor} STARS\n" \
-                             f"<b>12H</b> {floor_dif_2}, <b>24H</b> {floor_dif_3},\n" \
-                             f"<b>36H</b> {floor_dif_4}, <b>48H</b> {floor_dif_5},\n" \
-                             f"<b>60H</b> {floor_dif_6}, <b>72H</b> {floor_dif_7},\n" \
-                             f"<b>84H</b> {floor_dif_8}, <b>96H</b> {floor_dif_9},\n" \
+                             f"<b>{tf}H</b> {floor_dif_2}, <b>{tf * 2}H</b> {floor_dif_3},\n" \
+                             f"<b>{tf * 3}H</b> {floor_dif_4}, <b>{tf * 4}H</b> {floor_dif_5},\n" \
+                             f"<b>{tf * 5}H</b> {floor_dif_6}, <b>{tf * 6}H</b> {floor_dif_7},\n" \
+                             f"<b>{tf * 7}H</b> {floor_dif_8}, <b>{tf * 8}H</b> {floor_dif_9},\n" \
                              f"<a href='{url_meta}'><em>{'view on metabase':*^5}</em></a>\n"
             report.append(output_ru)
-        return "".join(report[:4096])
+        # return "".join(report[:4096])
+        return report
 
 
 async def get_blitz_report():
@@ -137,5 +139,5 @@ async def get_blitz_report():
 
 
 if __name__ == "__main__":
-    result = asyncio.run(get_blitz_report())
-    print(result)
+    report = asyncio.run(get_blitz_report())
+    print("".join(report[:6]))

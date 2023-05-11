@@ -31,6 +31,16 @@ class SelectQuery(MainDB):
                 result = await cursor.fetchone()
                 return result if result else None
 
+    async def select_owner_addr_name(self):
+        """Получаем owner_addr и owner_name для переноса в БД Users"""
+        async with self.connector as conn:
+            sql = """SELECT owner_addr, owner_name FROM owners"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchall()
+                for res in result:
+                    yield res
+                # return result
+
     async def select_rarity_max(self, token_id: int):
         """Получаем rarity_max - максимальное количество предметов в коллекции"""
         async with self.connector as conn:
@@ -94,7 +104,7 @@ class SelectQuery(MainDB):
 
 if __name__ == "__main__":
     owner_addr = 'stars1654yth3nm628ej2x4tm6farrf0h7wju7c3cyp6'
-    s = asyncio.run(SelectQuery().select_for_sales_monitoring(owner_addr))
+    s = asyncio.run(SelectQuery().select_owner_addr_name())
     for r in s:
         print(r)
     pass

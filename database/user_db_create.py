@@ -85,6 +85,11 @@ class UserDB:
                         date_add DATETIME,
                         FOREIGN KEY (user_id) REFERENCES users(user_id) 
                         );
+                    CREATE TABLE IF NOT EXISTS owners(
+                        owner_addr TEXT PRIMARY KEY,
+                        owner_name TEXT,
+                        date_add DATETIME
+                        );
                     CREATE TABLE IF NOT EXISTS addrs_monitor(
                         user_id INTEGER,
                         addr_monitor TEXT,
@@ -92,6 +97,8 @@ class UserDB:
                         date_add TEXT,
                         UNIQUE (user_id, addr_monitor, monitor_flag),
                         FOREIGN KEY (user_id) REFERENCES users(user_id)
+                        ON DELETE CASCADE,
+                        FOREIGN KEY (addr_monitor) REFERENCES owners(owner_addr)
                         ON DELETE CASCADE
                         );
                     CREATE TABLE IF NOT EXISTS sales_monitoring(
@@ -107,7 +114,9 @@ class UserDB:
                         price_usd REAL,
                         date_create TEXT,
                         date_add TEXT,
-                        UNIQUE (coll_addr, token_num, date_create)
+                        UNIQUE (coll_addr, token_num, date_create),
+                        FOREIGN KEY (addr_monitor) REFERENCES owners(owner_addr)
+                        ON DELETE CASCADE
                         );
                     CREATE TABLE IF NOT EXISTS buys_monitoring(
                         monitor_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,7 +131,9 @@ class UserDB:
                         price_usd REAL,
                         date_create TEXT,
                         date_add TEXT,
-                        UNIQUE (coll_addr, token_num, date_create)
+                        UNIQUE (coll_addr, token_num, date_create),
+                        FOREIGN KEY (addr_monitor) REFERENCES owners(owner_addr)
+                        ON DELETE CASCADE
                         );
                     CREATE TABLE IF NOT EXISTS send_monitor_info(
                         user_id INTEGER,

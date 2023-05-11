@@ -115,27 +115,27 @@ async def choice_delete_addr(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(lambda callback: callback.data.startswith('stars'),
                            state=FSMMonitoring.wallet_menu)
-async def delete_addr(callback: CallbackQuery, state: FSMContext):
+async def delete_addr(callback: CallbackQuery):
     """Снимаем флаг с отслеживаемого адреса"""
     msg_id, user_id = callback.message.message_id, callback.from_user.id
     del_addr = callback.data
-    del_addr_text = f"{callback.data[:9]}...{callback.data[-4]}"
+    del_addr_text = f"{callback.data[:9]}...{callback.data[-4:]}"
     await asyncio.sleep(sec)
     await bot.edit_message_text(message_id=msg_id, chat_id=user_id,
-                                text=f"Происходит удаление <b>{del_addr_text}</b>...",
+                                text=f"Происходит удаление <b>{del_addr_text}</b> >> 🗑",
                                 parse_mode='HTML', reply_markup='')
     try:
         await UserDBUpdate().upd_addrs_monitor(user_id=user_id, addr_monitor=del_addr)
-        await asyncio.sleep(sec*2)
+        await asyncio.sleep(sec*2.5)
         await bot.edit_message_text(message_id=msg_id, chat_id=user_id,
                                     text=LEXICON_CMD_RU["delete_addr"])
     except:
         pass
     await asyncio.sleep(sec)
     await callback.answer()
-    await state.finish()
-    await callback.message.answer(text=LEXICON_CMD_RU["bot_menu"], parse_mode='HTML',
-                                  reply_markup=kb.ikb_bot_menu)
+    await FSMMonitoring.wallet_menu.set()
+    await callback.message.answer(text=LEXICON_CMD_RU["wallet_menu"], parse_mode='HTML',
+                                  reply_markup=kb.ikb_wallet_action)
 
 
 @dp.callback_query_handler(text='monitoring_wallet', state=FSMMonitoring.wallet_menu)
@@ -147,7 +147,9 @@ async def monitoring_list(callback: CallbackQuery):
         count = await UserDBSelect().select_count_addrs_monitor(user_id)
         addrs_list: list = []
         for addr in full_addrs_list:
-            addrs_list.append(f"{addr[:12]}...{addr[-8:]}\n")
+            # addr[1] - owner_name
+            owner = addr[1] if addr[1] else f"{addr[0][:12]}...{addr[0][-8:]}"
+            addrs_list.append(f"{owner}\n")
         text_ru = f"<b>Сейчас отслеживается {count} адрес(-а,-ов)</b>:\n\n" \
                   f"◗ {'◗ '.join(addrs_list)}"
         await asyncio.sleep(sec/2)

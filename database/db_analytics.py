@@ -448,14 +448,16 @@ class AnalyticBlitz(MainDB):
                     yield res
             # return result
 
-    async def get_floor_dif(self):
+    async def get_floor_dif(self, tf: int):
         """Получаем коллекции у которых флор менядся последние 5
-        промежутков времени по 12 часов. Сравниваем на сколько изменилась цена."""
+        промежутков времени по 12 часов. Сравниваем на сколько изменилась цена.
+
+        :param tf - timeframe - промежуток вермени для анализа"""
         async with self.connector as conn:
-            sql = """WITH t1 AS(SELECT coll_id, 
+            sql = f"""WITH t1 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_1
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-12 hour') AND DATETIME()
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf} hour') AND DATETIME()
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
@@ -463,64 +465,64 @@ class AnalyticBlitz(MainDB):
                         ROUND(AVG(floor_price), 2) AS avg_floor_2,
                         '1' AS flag
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-24 hour')
-                            AND DATETIME(DATETIME(), '-12 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 2} hour')
+                            AND DATETIME(DATETIME(), '-{tf} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
                     t3 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_3
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-36 hour')
-                            AND DATETIME(DATETIME(), '-24 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 3} hour')
+                            AND DATETIME(DATETIME(), '-{tf * 2} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
                     t4 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_4
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-48 hour')
-                            AND DATETIME(DATETIME(), '-36 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 4} hour')
+                            AND DATETIME(DATETIME(), '-{tf * 3} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
                     t5 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_5
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-60 hour')
-                            AND DATETIME(DATETIME(), '-48 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 5} hour')
+                            AND DATETIME(DATETIME(), '-{tf * 4} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
                     t6 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_6
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-72 hour')
-                            AND DATETIME(DATETIME(), '-60 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 6} hour')
+                            AND DATETIME(DATETIME(), '-{tf * 5} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
                     t7 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_7
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-84 hour')
-                            AND DATETIME(DATETIME(), '-72 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 7} hour')
+                            AND DATETIME(DATETIME(), '-{tf * 6} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
                     t8 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_8
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-96 hour')
-                            AND DATETIME(DATETIME(), '-84 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 8} hour')
+                            AND DATETIME(DATETIME(), '-{tf * 7} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         ),
                     t9 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_9
                         FROM floors
-                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-108 hour')
-                            AND DATETIME(DATETIME(), '-96 hour')
+                        WHERE date_add BETWEEN DATETIME(DATETIME(), '-{tf * 9} hour')
+                            AND DATETIME(DATETIME(), '-{tf * 8} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
                         )
