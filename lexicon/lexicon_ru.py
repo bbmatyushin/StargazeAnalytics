@@ -1,6 +1,7 @@
 
 LEXICON_RU_HTML: dict = {
-    "admin_cmds": "<b>/send_all</b> - отправить сообщение всем.",
+    "admin_cmds": "<b>/floor_dif</b> - изменение флора\n"
+                  "<b>/send_all</b> - отправить сообщение всем.",
     "/start": "⭐️ <b>Stargaze Analytics!</b>\n\n"
               "⚛️ Аналитический бот <b>NFT Marketplace</b> "
               "<a href='https://www.stargaze.zone/'>Stargaze.zone</a>\n\n"

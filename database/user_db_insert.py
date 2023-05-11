@@ -14,6 +14,15 @@ class UserDBInsert(UserDB):
             await conn.execute(sql, data_insert)
             await conn.commit()
 
+    async def insert_owners(self, insert_data: list):
+        """Заполняем таблицу с адресами кошельков
+        data_insert = [owner_addr, owner_name]"""
+        async with self.connector as conn:
+            sql = """INSERT INTO owners(owner_addr, owner_name, date_add)
+                    VALUES(?, ?, DATETIME())"""
+            await conn.execute(sql, insert_data)
+            await conn.commit()
+
     async def insert_daily_reports(self, message: str):
         """Наполняем таблицу ежедневных отчетов"""
         async with self.connector as conn:

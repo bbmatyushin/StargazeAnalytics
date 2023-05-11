@@ -95,13 +95,15 @@ class UserDBSelect(UserDB):
     async def select_user_addrs_monitoring(self, user_id):
         """Aдреса для мониторинга отдельного пользователя"""
         async with self.connector as conn:
-            sql = """SELECT addr_monitor FROM addrs_monitor
+            sql = """SELECT owner_addr, owner_name
+                    FROM addrs_monitor a
+                     JOIN owners o ON o.owner_addr = a.addr_monitor
                     WHERE user_id = ?
                         AND monitor_flag = 1
-                    ORDER BY date_add"""
+                    ORDER BY a.date_add"""
             async with conn.execute(sql, (user_id,)) as cursor:
                 result = await cursor.fetchall()
-                return [el[0] for el in result]
+                return [el for el in result]
 
     async def select_users_monitoring(self, addr_monitor):
         """Пользователи которые следят за выбранным адресом"""
@@ -127,9 +129,10 @@ class UserDBSelect(UserDB):
         # monitor_ids.append(addr_monitor)
         # data = monitor_ids
         async with self.connector as conn:
-            sql = f"""SELECT addr_monitor, coll_addr, coll_name, token_name, token_num,
+            sql = f"""SELECT owner_addr, owner_name, coll_addr, coll_name, token_name, token_num,
                         buyer_addr, buyer_name, price_stars, price_usd, DATETIME(date_create) AS dt
-                    FROM sales_monitoring
+                    FROM sales_monitoring sm
+                        JOIN owners o ON sm.addr_monitor = o.owner_addr
                     WHERE monitor_id = ?
                         AND addr_monitor = ?
                     ORDER BY date_create"""
@@ -142,9 +145,10 @@ class UserDBSelect(UserDB):
         # monitor_ids.append(addr_monitor)
         # data = monitor_ids
         async with self.connector as conn:
-            sql = f"""SELECT addr_monitor, coll_addr, coll_name, token_name, token_num,
+            sql = f"""SELECT owner_addr, owner_name, coll_addr, coll_name, token_name, token_num,
                         seller_addr, seller_name, price_stars, price_usd, DATETIME(date_create) AS dt
-                    FROM buys_monitoring
+                    FROM buys_monitoring bm
+                        JOIN owners o ON bm.addr_monitor = o.owner_addr
                     WHERE monitor_id = ?
                         AND addr_monitor = ?
                     ORDER BY date_create"""
@@ -191,6 +195,6 @@ class UserDBSelect(UserDB):
 if __name__ == "__main__":
     monitors_ids = 7
     addr_monitor = 'stars1654yth3nm628ej2x4tm6farrf0h7wju7c3cyp6'
-    result = asyncio.run(UserDBSelect().select_active_users())
+    result = asyncio.run(UserDBSelect().select_user_addrs_monitoring(1916570670))
     for r in result:
         print(r)
