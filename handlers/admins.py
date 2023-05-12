@@ -50,7 +50,7 @@ async def send_msg_all_users_2(msg: Message, state: FSMContext):
 async def admin_send_blitz_report(msg: Message):
     """Ограничение - только для админов"""
     report = await get_blitz_report()
-    report_text_ru = "".join(report)[:4096]
+    report_text_ru = "".join(report[:10])
     admins = await UserDBSelect().select_admins_subscribe()
     if msg.from_user.id in admins:
         try:

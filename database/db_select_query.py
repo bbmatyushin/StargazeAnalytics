@@ -1,3 +1,4 @@
+#TODO: Дубль для тернировок
 import asyncio
 
 from database.db_create import MainDB
@@ -52,5 +53,5 @@ async def _main():
 if __name__ == "__main__":
     # s = SelectQuery().select_owner_id()
     # print(s)
-    res = asyncio.run(SelectQuery().select_owner_id('stars1f87q82cnmzsf3h7pqg0lllrvjp0zhfaceh3yk6'))
+    res = asyncio.run(SelectQuery().select_owner_id(''))
     print(res)

@@ -22,7 +22,7 @@ async def send_blitz_report():
     """Ограничение - только для админов"""
     logging.info(f"Send BLITZ report at {datetime.now()}")
     report = await get_blitz_report()
-    report_text_ru = "".join(report)[:4096]
+    report_text_ru = "".join(report[:10])
     admins = await UserDBSelect().select_admins_subscribe()
     for user in admins:
         try:

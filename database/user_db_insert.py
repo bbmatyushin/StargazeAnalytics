@@ -154,4 +154,4 @@ class UserDBInsert(UserDB):
 
 if __name__ == "__main__":
     data_insert = [1, 'username', 'first_name', 'last_name', 'language_code']
-    asyncio.run(UserDBInsert().insert_admins(1916570670))
+    asyncio.run(UserDBInsert().insert_admins())

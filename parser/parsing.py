@@ -275,24 +275,62 @@ class Parser:
                 else:
                     yield None
 
+    async def owners_parsing(self, owner_addr):
+        """По каждому кошельку парсется информация сколко у него токенов
+        и из какой коллекции."""
+        async with ClientSession() as session:
+            query = """query Tokens {
+                          tokens(
+                            ownerAddr: "<owner_addr>",
+                            offset: <offset>,
+                            limit: 100
+                          ) {
+                            tokens {
+                              collectionAddr
+                              tokenId
+                              name
+                              forSale
+                              createdAt
+                            }
+                          }
+                        }"""
+            offset: int = 0
+            while True:
+                async with session.post(url=self.api_url, headers=self.header_api,
+                                        json={'query': query.replace("<owner_addr>", owner_addr)\
+                                        .replace('<offset>', str(offset))}) as response:
+                    if response.ok:
+                        data = await response.json()
+                        tokens_data = data.get("data").get("tokens").get("tokens")
+                        if tokens_data:
+                            for token in tokens_data:
+                                coll_addr = token.get('collectionAddr')
+                                token_num = token.get('tokenId')
+                                token_name = token.get('name')
+                                for_sale = token.get('forSale')
+                                date_create = token.get('createdAt')
+                                yield coll_addr, token_name, token_num, for_sale, date_create
+                            await asyncio.sleep(3)
+                        else:
+                            break
+                    else:
+                        break
+                offset += 100
+
+
+async def main():
+    owner_addr = "stars10e4jhxvuzwcuvy3gsewnzqlmr6pvnp5dfxsvn0"
+    # task = asyncio.create_task(Parser().owners_parsing(owner_addr))
+    # res = await task
+    # print(res)
+    count = 0
+    async for data in Parser().owners_parsing(owner_addr):
+        print(data)
+        count += 1
+    print(count)
 
 
 if __name__ == "__main__":
-    async def main():
-        tasks = []
-        async for data in Parser().get_listing_and_update_price_data():
-            print(data)
-
-        # await task
-
-    asyncio.run(main())
-
-
-    # for count, el in enumerate(Parser().get_mints_data()):
-    #     print(f"{count}) {el}")
-    # coll_addr = 'stars17k2wdz2wmldut3pvg2zrt8jzysh833a5y2cpwqul2q90kkw3w8gsqn98fj'
-    # token_num = '1942'
-    # data = Parser().get_mints_data()
-    # print(data)
+    asyncio.run(main(), debug=True)
 
 

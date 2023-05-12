@@ -36,6 +36,16 @@ class InsertIntoDB(MainDB):
             await conn.execute(sql, insert_data)
             await conn.commit()
 
+    async def insert_owners_tokens(self, insert_data):
+        """Заполняем таблицу owners_tokens кто какими токенами владеет
+        insert_data = [owner_id, coll_id, token_id, for_sale, date_create]"""
+        async with self.connector as conn:
+            sql = """INSERT INTO owners_tokens(
+                        owner_id, coll_id, token_id, for_sale, date_create, date_add)
+                    VALUES(?, ?, ?, ?, ?, DATETIME())"""
+            await conn.execute(sql, insert_data)
+            await conn.commit()
+
     async def insert_floors(self, insert_data):
         """Заполняем таблицу floors
         insert_data = [coll_id, floor_price]"""

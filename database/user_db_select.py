@@ -194,7 +194,7 @@ class UserDBSelect(UserDB):
 
 if __name__ == "__main__":
     monitors_ids = 7
-    addr_monitor = 'stars1654yth3nm628ej2x4tm6farrf0h7wju7c3cyp6'
-    result = asyncio.run(UserDBSelect().select_user_addrs_monitoring(1916570670))
+    addr_monitor = ''
+    result = asyncio.run(UserDBSelect().select_user_addrs_monitoring())
     for r in result:
         print(r)
