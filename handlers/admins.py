@@ -11,6 +11,7 @@ from lexicon.lexicon_ru import LEXICON_RU_HTML
 from handlers.states import FSMAdmin
 
 from reports.report_blitz import get_blitz_report
+from reports.report_whales import get_whales_report
 
 
 @dp.message_handler(commands=['send_all'], state="*")
@@ -59,6 +60,14 @@ async def admin_send_blitz_report(msg: Message):
             pass
         except BotBlocked:
             pass
+
+
+@dp.message_handler(commands=['whales_report'], state="*")
+async def send_whales_report_test(msg: Message):
+    admins = await UserDBSelect().select_admins_subscribe()
+    if msg.from_user.id in admins:
+        report = await get_whales_report()
+        await msg.answer(text=report, parse_mode='HTML')
 
 
 @dp.message_handler(commands=['admin'], state="*")

@@ -16,7 +16,7 @@ sudo docker run \
 sg_data_parser
 ```
 
-Парсер запуститься через 120 секунд. Проверить логи можно командой:
+Проверить логи можно командой:
 ```shell
 docker logs -f sg_analytics_parser
 ```

@@ -8,7 +8,7 @@ from pathlib import Path
 class UserDB:
     def __init__(self):
         self.work_dir = os.path.dirname(os.path.realpath(__file__))
-        self.connector = aiosqlite.connect(Path(self.work_dir, 'users.db'))
+        self.connector = aiosqlite.connect(Path(self.work_dir, '_db', 'users.db'))
 
     async def create_tables(self):
         async with self.connector as conn:
@@ -34,6 +34,7 @@ class UserDB:
                     CREATE TABLE IF NOT EXISTS users_subscribe(
                         user_id INTEGER UNIQUE,
                         subscribe_flag INTEGER,
+                        report_name TEXT,
                         date_add DATETIME,
                         FOREIGN KEY (user_id) REFERENCES users(user_id) 
                         );

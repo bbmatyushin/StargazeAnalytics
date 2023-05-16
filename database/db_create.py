@@ -7,7 +7,7 @@ from pathlib import Path
 class MainDB:
     def __init__(self):
         self.db_dir = os.path.dirname(os.path.realpath(__file__))
-        self.connector = aiosqlite.connect(f"{Path(self.db_dir, 'stargaze_analytics.db')}")
+        self.connector = aiosqlite.connect(f"{Path(self.db_dir, '_db', 'stargaze_analytics.db')}")
         # self.cursor = self.connector.cursor()
 
     async def create_tables(self):

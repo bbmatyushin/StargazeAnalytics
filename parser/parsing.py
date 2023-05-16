@@ -3,7 +3,7 @@ import re
 # import requests
 
 from aiohttp import ClientSession
-
+from datetime import datetime
 # import time
 # from fake_headers import Headers
 # from bs4 import BeautifulSoup
@@ -95,7 +95,7 @@ class Parser:
         """Для анализа продаж коллекций"""
         async with ClientSession() as session:
             query_sales = """query Sales {
-                          events(filter: SALES, sortBy: BLOCK_HEIGHT_DESC, first: 35) {
+                          events(filter: SALES, sortBy: BLOCK_HEIGHT_DESC, first: 50) {
                             edges {
                               node {
                                 createdAt
@@ -163,7 +163,7 @@ class Parser:
                             }
                             ],
                             "dataFilters": [],
-                            "first": 25
+                            "first": 50
                             }
             async with session.post(url=self.api_url, headers=self.header_api,
                                     json={'query': query_burn, 'variables': variables_burn}) \
@@ -185,7 +185,7 @@ class Parser:
         """Получаем данные об минтах"""
         async with ClientSession() as session:
             query = """query Mints{
-              events(filter: MINTS, sortBy: BLOCK_HEIGHT_DESC, first: 40) {
+              events(filter: MINTS, sortBy: BLOCK_HEIGHT_DESC, first: 50) {
                 edges {
                   node {
                     createdAt
@@ -234,7 +234,7 @@ class Parser:
                                 }
                               }
                             }"""
-            variables_listing = {'first': 20,
+            variables_listing = {'first': 40,
                              "contractFilters": [
                                  {
                                      "contractType": "crates.io:sg-marketplace",
@@ -319,15 +319,17 @@ class Parser:
 
 
 async def main():
+    start = datetime.now()
     owner_addr = "stars10e4jhxvuzwcuvy3gsewnzqlmr6pvnp5dfxsvn0"
     # task = asyncio.create_task(Parser().owners_parsing(owner_addr))
     # res = await task
     # print(res)
     count = 0
-    async for data in Parser().owners_parsing(owner_addr):
+    async for data in Parser().get_mints_data():
         print(data)
         count += 1
     print(count)
+
 
 
 if __name__ == "__main__":

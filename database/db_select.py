@@ -22,12 +22,35 @@ class SelectQuery(MainDB):
                 result = await cursor.fetchone()
                 return result[0] if result else None
 
+    async def select_rarity_max(self, token_id: int):
+        """Получаем rarity_max - максимальное количество предметов в коллекции"""
+        async with self.connector as conn:
+            sql = """SELECT tokens_count
+                    FROM collections
+                    JOIN tokens USING(coll_id)
+                    WHERE token_id = ?"""
+            async with conn.execute(sql, (token_id,)) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else None
+
+    # TODO: ###########  OWNERS  ################
+
     async def select_owner_id(self, owner_addr: str):
         """Получаем owner_id"""
         async with self.connector as conn:
             sql = """SELECT owner_id FROM owners
                     WHERE owner_addr = ?"""
             async with conn.execute(sql, (owner_addr, )) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else None
+
+    async def select_count_owners(self):
+        """Получаем количество всех кошельков в базе"""
+        async with self.connector as conn:
+            # так быстрее отрабатывает
+            sql = """SELECT owner_id FROM owners
+                    ORDER BY owner_id DESC LIMIT 1"""
+            async with conn.execute(sql) as cursor:
                 result = await cursor.fetchone()
                 return result[0] if result else None
 
@@ -50,17 +73,6 @@ class SelectQuery(MainDB):
                 for res in result:
                     yield res
                 # return result
-
-    async def select_rarity_max(self, token_id: int):
-        """Получаем rarity_max - максимальное количество предметов в коллекции"""
-        async with self.connector as conn:
-            sql = """SELECT tokens_count
-                    FROM collections
-                    JOIN tokens USING(coll_id)
-                    WHERE token_id = ?"""
-            async with conn.execute(sql, (token_id,)) as cursor:
-                result = await cursor.fetchone()
-                return result[0] if result else None
 
     #TODO: ###########  MONITORING SELECT  ################
     async def select_for_sales_monitoring(self, owner_addr: str):
@@ -123,13 +135,10 @@ class SelectQuery(MainDB):
                     yield res
 
 async def main():
-    async for res in SelectQuery().select_owner_addr():
-        print(res)
+    count = await SelectQuery().select_count_owners()
+    return count
 
 
 if __name__ == "__main__":
-    # owner_addr = ''
-    # s = asyncio.run(SelectQuery().select_owner_addr())
-    # for r in s:
-    #     print(r[0])
-    asyncio.run(main())
+    c = asyncio.run(main())
+    print(c)

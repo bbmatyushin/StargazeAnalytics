@@ -11,6 +11,7 @@ from aiologger.formatters.base import Formatter
 from database.db_insert import InsertIntoDB, MainDB
 from database.db_select import SelectQuery
 from database.db_owners_tokens import OwnersTokensDB
+from database.db_mint import MintDB
 from parser.parsing import Parser
 
 # formatter = Formatter('%(asctime)s [%(levelname)s] %(filename)s -> %(funcName)s line:%(lineno)d %(message)s')
@@ -137,8 +138,8 @@ class GetDataStargaze:
         """Получаем данные по минтам.
         Заполняем таблицы collections, tokens, rarity, owners, mints новыми данными"""
         await logger.info(" ############ Get Mints data.. ############ ")
-        data_mints = Parser().get_mints_data()
-        async for data in data_mints:
+        # data_mints = Parser().get_mints_data()
+        async for data in MintDB().select_mints_data():
             if data:
                 block_height, coll_addr, token_num, recipient_addr, creator_addr, \
                     price_stars, price_usd, date_create = data[0], data[1], data[2], \
@@ -192,9 +193,11 @@ class GetDataStargaze:
     async def check_owners_tokens(self):
         """Проверяем какие токены есть на кошельке все адреса"""
         # insert_data = [owner_id, coll_id, token_id, for_sale, date_create]
+        count_owner = await SelectQuery().select_count_owners()
+        count = count_owner
         async for owner_addr in SelectQuery().select_owner_addr():  # вытаскиваем по очереди адреса всех кошельков
             async for data in Parser().owners_parsing(owner_addr):  # получаем ео данные
-                await logger.info(f"Get data {data}")
+                await logger.info(f"Addr {count}/{count_owner}. Get data {data}")
                 coll_addr, token_name, token_num, for_sale, date_create = \
                     data[0], data[1], data[2], data[3], data[4]
                 if await SelectQuery().select_owner_id(owner_addr):  # такой владелец уже есть в БД
@@ -210,54 +213,35 @@ class GetDataStargaze:
                         try:
                             insert_token_data = [coll_id, token_name, token_num]
                             await InsertIntoDB().insert_tokens(insert_token_data)
-                            await logger.info(f"[+] Insert new token {token_name} from Coll_ID {coll_id}")
+                            await logger.info(f"Addr {count}/{count_owner}. [+] Insert new token {token_name} from Coll_ID {coll_id}")
                         except aiosqlite.IntegrityError:
-                            pass
+                            await logger.info(f"Addr {count}/{count_owner}. Insert UNIQUE value.")
                         token_id = await SelectQuery().select_token_id(coll_id, int(token_num))
                 else:
                     coll_id, coll_name, token_id, floor_price = await self.main_insert(coll_addr, token_num)
                 insert_data = [owner_id, coll_id, token_id, for_sale, date_create]  # получаем данные для вставки
-                await logger.info(f"Get insert data {insert_data}")
+                await logger.info(f"Addr {count}/{count_owner}. Get insert data {insert_data}")
                 try:
                     await OwnersTokensDB().insert_owners_tokens_single(insert_data)
-                    # await InsertIntoDB().insert_owners_tokens(insert_data)
-                    await logger.info(f"Add new token for OWNER {owner_addr[:8]}...{owner_addr[-4:]}")
+                    await logger.info(f"Addr {count}/{count_owner}. Add new token for OWNER {owner_addr[:8]}...{owner_addr[-4:]}")
                 except aiosqlite.IntegrityError:
-                    continue
+                    await logger.info(f"Addr {count}/{count_owner}. Insert UNIQUE value.")
+            count -= 1
 
     async def insert_owners_tokens_in_main(self):
         """Вставка из БД owners_tokens в основнуб БД в таблицу owners_tokens"""
+        count_rows = await OwnersTokensDB().select_count_rows()
+        count = count_rows
         async for insert_data in OwnersTokensDB().select_owners_tokens_single():
             try:
                 await InsertIntoDB().insert_owners_tokens(insert_data)
-                await logger.info(f"insert DATA OWNERS_TOKENS to Main DB - {insert_data}")
+                await logger.info(f"Row {count}/{count_rows} insert DATA OWNERS_TOKENS to Main DB - {insert_data}")
             except aiosqlite.IntegrityError as err:
-                await logger.warning(f"Insert UNIQUE values: {err}")
+                await logger.warning(f"Row {count}/{count_rows}. Insert UNIQUE values.")
+            count -= 1
 
 
-    async def run(self):
-        """Старый вариант запуска через schedule"""
-        start = datetime.now()
-        await logger.info(f" ======> Start parsing at {start}")
-        task0 = asyncio.create_task(MainDB().create_tables())
-        task1 = asyncio.create_task(self.sales_parsing())
-        task2 = asyncio.create_task(self.burns_parsing())
-        task3 = asyncio.create_task(self.mints_parsing())
-        task4 = asyncio.create_task(self.listings_parsing())
-        task5 = asyncio.create_task(self.check_owners_tokens())
-        await task0
-        await task1
-        await task2
-        await task3
-        await task4
-        await task5
-        # await asyncio.gather(task0, task1, task2, task3, task4)
-        await logger.info(f" ======> Done {datetime.now() - start}")
-        # await asyncio.sleep(1)
-        return None
-
-
-@aiocron.crontab('*/2 * * * *')
+@aiocron.crontab('*/2 * * * * ')
 async def main():
     start = datetime.now()
     await logger.info(f" ======> Start parsing at {start}")
@@ -276,27 +260,76 @@ async def main():
     # await asyncio.sleep(1)
     return None
 
-@aiocron.crontab('35 3 * * sun')
+
+@aiocron.crontab('0-10 20,21 * * * */3')
+async def mint_fast_parsing():
+    """Парсим данные по минтам каждые 3 секунды
+    с 20:00 до 20:10 и с 21:00 до 21:10 - в это время,
+    как правило новые минты."""
+    create_db = asyncio.create_task(MintDB().create_table())
+    await create_db
+    data_mints = Parser().get_mints_data()
+    async for insert_data in data_mints:
+        try:
+            await MintDB().insert_mints_data(insert_data)
+            await logger.info("Get new MINT data. Work FAST PARSER.")
+        except aiosqlite.IntegrityError:
+            await logger.info("NO UNIQUE MINT data for insert. Work FAST PARSER.")
+            pass
+
+
+@aiocron.crontab('*/1 * * * *')
+async def mint_slow_parsing():
+    """Парсим данные по минтам раз в минуту,
+    в любое время кроме 20:00-20:10 и 21:00-21:10,
+    в это время работает парсер каждые 3 секунды"""
+    condition_hours = datetime.now().hour != 20 and datetime.now().hour != 21
+    condition_minute = datetime.now().minute > 10
+    if condition_hours or condition_minute:
+        create_db = asyncio.create_task(MintDB().create_table())
+        await create_db
+        data_mints = Parser().get_mints_data()
+        async for insert_data in data_mints:
+            try:
+                await MintDB().insert_mints_data(insert_data)
+                await logger.info("Get new MINT data. Work SLOW PARSER.")
+            except aiosqlite.IntegrityError:
+                await logger.info("NO UNIQUE MINT data for insert. Work SLOW PARSER.")
+                pass
+
+
+@aiocron.crontab('35 1 * * 6')
 async def check_owners():
+    """Запускается ночью в субботу"""
     start1 = datetime.now()
     await logger.info(f" ======> Start CHECK OWNERS parsing at {start1}")
     task0 = asyncio.create_task(MainDB().create_tables())
     task1 = asyncio.create_task(GetDataStargaze().check_owners_tokens())
-    task2 = asyncio.create_task(OwnersTokensDB().create_table())
-    task3 = asyncio.create_task(GetDataStargaze().insert_owners_tokens_in_main())
     await task0
     await task1  # собираем инфу о токенах
     await logger.info(f" ======> CHECK OWNERS Done {datetime.now() - start1}")
+    return None
+
+
+@aiocron.crontab('35 1 * * 7')
+async def insert_owners_tokens():
+    """Вставляем полученные данные о держателей токенов из
+    вспомогательной БД в основную.
+    Запускается ночью в вс, чтобы не перегружать БД (будет блокироваться при вставке)"""
     start2 = datetime.now()
+    task2 = asyncio.create_task(OwnersTokensDB().create_table())
+    task3 = asyncio.create_task(GetDataStargaze().insert_owners_tokens_in_main())
     await logger.info(f" ======> Start INSERT Owners Tokens in MainDB at {start2}")
     await task2
     await task3  # собранную инфу переносим из вспомогательной БД в основную
     await logger.info(f" ======> INSERT Owners Tokens in MainDB Done {datetime.now() - start2}")
-    return None
 
 
 if __name__ == "__main__":
     main.start()
     check_owners.start()
+    insert_owners_tokens.start()
+    mint_fast_parsing.start()
+    mint_slow_parsing.start()
     asyncio.get_event_loop().run_forever()
-    # asyncio.run(check_owners())
+    # asyncio.run(mint_parsing())

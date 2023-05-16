@@ -66,8 +66,8 @@ class UserDBInsert(UserDB):
     async def insert_users_subscribe(self, user_id: int):
         """Отмечаем флагом тех кто подписался на отчеты"""
         async with self.connector as conn:
-            sql = """INSERT INTO users_subscribe(user_id, subscribe_flag, date_add)
-                    VALUES(?, 1, DATETIME())"""
+            sql = """INSERT INTO users_subscribe(user_id, subscribe_flag, report_name, date_add)
+                    VALUES(?, 1, '24h_report', DATETIME())"""
             await conn.execute(sql, (user_id,))
             await conn.commit()
 

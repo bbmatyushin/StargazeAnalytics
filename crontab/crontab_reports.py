@@ -11,6 +11,7 @@ from database.user_db_select import UserDBSelect
 from database.user_db_insert import UserDBInsert
 from reports.report_24h import get_daily_report
 from reports.report_blitz import get_blitz_report
+from reports.report_whales import get_whales_report
 
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
@@ -40,7 +41,7 @@ async def send_daily_report():
     """Отправка отчётов изменений за последние 24 часа"""
     logging.info(f"Send DAILY report at {datetime.now()}")
     report_text_ru = await get_daily_report()
-    users_subscribe = await UserDBSelect().select_subscribe_users()
+    users_subscribe = await UserDBSelect().select_subscribe_users_24h_report()
     try:  # добавляем отчет в таблицу с ежедневными отчетами
         await UserDBInsert().insert_daily_reports(message=report_text_ru)
     except aiosqlite.IntegrityError as err:
@@ -78,3 +79,12 @@ async def send_daily_report():
 # async def send_monthly_report():
 #     logging.info(f"Send MONTHLY report at {datetime.now()}")
 #     print('MONTHLY report!')
+
+
+# @aiocron.crontab('10 12 * * 7')
+async def send_whales_report():
+    """Отправка отчётов о китах"""
+    #TODO: ДОДЕЛАТЬ
+    logging.info(f"Send WHALES report at {datetime.now()}")
+    report = await get_blitz_report()
+    pass

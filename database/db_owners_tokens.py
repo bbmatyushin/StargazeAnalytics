@@ -2,6 +2,7 @@
 и при этом блокируется основная БД, а значит нельзя будет встаивть
 значени по сделкам."""
 import aiosqlite
+import asyncio
 import os
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from pathlib import Path
 class OwnersTokensDB:
     def __init__(self):
         self.db_dir = os.path.dirname(os.path.realpath(__file__))
-        self.connector = aiosqlite.connect(f"{Path(self.db_dir, 'owners_tokens.db')}")
+        self.connector = aiosqlite.connect(f"{Path(self.db_dir, '_db', 'owners_tokens.db')}")
         # self.create_table()
 
     async def create_table(self):
@@ -45,3 +46,16 @@ class OwnersTokensDB:
                 result = await cursor.fetchall()
                 for res in result:
                     yield res
+
+    async def select_count_rows(self):
+        """Количество строк для вставки"""
+        async with self.connector as conn:
+            sql = """SELECT COUNT(coll_id) FROM owners_tokens_single"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else None
+
+
+if __name__ == "__main__":
+    c = asyncio.run(OwnersTokensDB().select_count_rows())
+    print(c)
