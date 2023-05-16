@@ -66,8 +66,8 @@ class UserDBInsert(UserDB):
     async def insert_users_subscribe(self, user_id: int):
         """Отмечаем флагом тех кто подписался на отчеты"""
         async with self.connector as conn:
-            sql = """INSERT INTO users_subscribe(user_id, subscribe_flag, date_add)
-                    VALUES(?, 1, DATETIME())"""
+            sql = """INSERT INTO users_subscribe(user_id, subscribe_flag, report_name, date_add)
+                    VALUES(?, 1, '24h_report', DATETIME())"""
             await conn.execute(sql, (user_id,))
             await conn.commit()
 
@@ -154,4 +154,4 @@ class UserDBInsert(UserDB):
 
 if __name__ == "__main__":
     data_insert = [1, 'username', 'first_name', 'last_name', 'language_code']
-    asyncio.run(UserDBInsert().insert_admins(1916570670))
+    asyncio.run(UserDBInsert().insert_admins())

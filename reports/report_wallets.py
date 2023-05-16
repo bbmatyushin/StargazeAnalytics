@@ -48,7 +48,7 @@ class WalletsReport:
             owner = owner_name if owner_name else f"{owner_addr[:9]}...{owner_addr[-4:]}"
             seller = seller_name if seller_name else f'{seller_addr[:9]}...{seller_addr[-4:]}'
             msg = f"#buys_report\n\n" \
-                  f"🟣 Покупка кошельком <a href='{owner_url}'>{owner}</a>:" \
+                  f"🟣 Покупка кошельком <a href='{owner_url}'>{owner}</a>:\n" \
                   f"\n<b>{coll_name}</b>, <a href='{item_url}'>{token_name}</a>\n" \
                   f"<b>Buy</b>: {price_stars} STARS (${price_usd})\n" \
                   f"<b>Seller</b>: <a href='{seller_url}'>{seller}</a>\n"

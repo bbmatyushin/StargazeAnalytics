@@ -6,7 +6,8 @@ from pathlib import Path
 
 class MainDB:
     def __init__(self):
-        self.connector = aiosqlite.connect(f"{Path(os.path.dirname(os.path.realpath(__file__)), 'stargaze_analytics.db')}")
+        self.db_dir = os.path.dirname(os.path.realpath(__file__))
+        self.connector = aiosqlite.connect(f"{Path(self.db_dir, '_db', 'stargaze_analytics.db')}")
         # self.cursor = self.connector.cursor()
 
     async def create_tables(self):
@@ -109,6 +110,21 @@ class MainDB:
                         FOREIGN KEY (coll_id) REFERENCES collections(coll_id),
                         FOREIGN KEY (token_id) REFERENCES tokens(token_id),
                         FOREIGN KEY (seller_id) REFERENCES owners(owner_id)
+                        );
+                    CREATE TABLE IF NOT EXISTS owners_tokens(
+                        owner_id INTEGER,
+                        coll_id INTEGER,
+                        token_id INTEGER,
+                        for_sale TEXT,
+                        date_create TEXT,
+                        date_add TEXT,
+                        UNIQUE(owner_id, coll_id, token_id)
+                        FOREIGN KEY (owner_id) REFERENCES owners(owner_id)
+                        ON DELETE CASCADE,
+                        FOREIGN KEY (coll_id) REFERENCES collections(coll_id)
+                        ON DELETE CASCADE,
+                        FOREIGN KEY (token_id) REFERENCES tokens(token_id)
+                        ON DELETE CASCADE
                         );
                         """
             await conn.executescript(sql)

@@ -10,12 +10,13 @@ sudo docker build -t sg_data_parser .
 sudo docker run \
 --name=sg_analytics_parser \
 -v `pwd`/database/stargaze_analytics.db:/StargazeParser/database/stargaze_analytics.db \
+-v `pwd`/database/owners_tokens.db:/StargazeParser/database/owners_tokens.db \
 --restart=always \
 -d \
 sg_data_parser
 ```
 
-Парсер запуститься через 120 секунд. Проверить логи можно командой:
+Проверить логи можно командой:
 ```shell
 docker logs -f sg_analytics_parser
 ```

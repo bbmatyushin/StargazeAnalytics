@@ -2,7 +2,10 @@ FROM python:3.8
 
 WORKDIR /StargazeParser
 
-COPY . .
+COPY ./database/db_* ./database/
+COPY ./parser/ ./parser/
+COPY ./parser_start.py .
+COPY ./requirements_parser.txt .
 
 RUN pip install -r requirements_parser.txt
 

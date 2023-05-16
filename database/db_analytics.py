@@ -112,27 +112,26 @@ class Analytics24H(MainDB):
                     yield row
             # return result
 
-    async def whale_top3(self):
-        """ТОП-3 кита покупателя за последние 24 часа"""
+    async def buyers_top3(self, hours: int = 24):
+        """ТОП-3 покупателя за последние 24 часа
+        :param hours - таймфрейм для отчета"""
         async with self.connector as conn:
-            sql = """WITH t1 AS(
+            sql = f"""WITH t1 AS(
                         SELECT owners.owner_id as buyer_id, 
                         owner_name as buyer_name, owner_addr as buyer_addr,
-                        SUM(price_stars) sum_stars_t1, SUM(price_usd) sum_usd_t1,
-                        MIN(DATETIME(date_create)), MAX(DATETIME(date_create))
+                        SUM(price_stars) sum_stars_t1, SUM(price_usd) sum_usd_t1
                         FROM sales JOIN owners ON sales.buyer_id = owners.owner_id
-                        WHERE DATETIME(date_create) >= DATETIME(DATETIME(), '-24 hours')
+                        WHERE DATETIME(date_create) >= DATETIME(DATETIME(), '-{hours} hours')
                         GROUP BY owner_id, owner_name, owner_addr
                         ORDER BY sum_stars_t1 DESC LIMIT 3
                     ),
                     t2 AS(
                         SELECT owners.owner_id as buyer_id, 
                         owner_name as buyer_name, owner_addr as buyer_addr,
-                        SUM(price_stars) sum_stars_t2, SUM(price_usd) sum_usd_t2,
-                        MIN(DATETIME(date_create)), MAX(DATETIME(date_create))
+                        SUM(price_stars) sum_stars_t2, SUM(price_usd) sum_usd_t2
                         FROM sales JOIN owners ON sales.buyer_id = owners.owner_id
-                        WHERE DATETIME(date_create) BETWEEN DATETIME(DATETIME(), '-48 hours')
-                            AND DATETIME(DATETIME(), '-24 hours')
+                        WHERE DATETIME(date_create) BETWEEN DATETIME(DATETIME(), '-{hours * 2} hours')
+                            AND DATETIME(DATETIME(), '-{hours} hours')
                         GROUP BY owner_id, owner_name, owner_addr
                     )
                     SELECT t1.buyer_name, t1.buyer_addr,
@@ -150,6 +149,51 @@ class Analytics24H(MainDB):
                             ELSE ROUND((sum_usd_t1 * 1.0/sum_usd_t2 - 1) * 100, 2)
                         END as 'delta_usd, %'
                     FROM t1 LEFT JOIN t2 USING(buyer_id)"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchall()
+                for row in result:
+                    yield row
+            # return result
+
+    async def sellers_top3(self, hours: int = 24):
+        """ТОП-3 продавца за последние 24 часа
+        :param hours - таймфрейм для отчета"""
+        async with self.connector as conn:
+            sql = f"""WITH t1 AS(
+                        SELECT owners.owner_id as seller_id, 
+	                        owner_name as seller_name, owner_addr as seller_addr,
+                            SUM(price_stars) sum_stars_t1,
+                            SUM(price_usd) sum_usd_t1
+                        FROM sales JOIN owners ON sales.seller_id = owners.owner_id
+                        WHERE DATETIME(date_create) >= DATETIME(DATETIME(), '-{hours} hours')
+                        GROUP BY owner_id, owner_name, owner_addr
+                        ORDER BY sum_stars_t1 DESC LIMIT 3
+                    ),
+                    t2 AS(
+                        SELECT owners.owner_id as seller_id, 
+	                        owner_name as seller_name, owner_addr as seller_addr,
+                            SUM(price_stars) sum_stars_t2,
+                            SUM(price_usd) sum_usd_t2
+                        FROM sales JOIN owners ON sales.seller_id = owners.owner_id
+                        WHERE DATETIME(date_create) BETWEEN DATETIME(DATETIME(), '-{hours * 2} hours')
+                            AND DATETIME(DATETIME(), '-{hours} hours')
+                        GROUP BY owner_id, owner_name, owner_addr
+                    )
+                    SELECT t1.seller_name, t1.seller_addr,
+                        sum_stars_t1, sum_stars_t2,
+                        CASE
+                            WHEN sum_stars_t2 IS NULL THEN 'NEW!'
+                            WHEN sum_stars_t2 = 0 THEN 'NEW!'
+                            ELSE ROUND((sum_stars_t1 * 1.0/sum_stars_t2 - 1) * 100, 2)
+                        END as 'delta_stars, %',
+                        ROUND(sum_usd_t1, 2) sum_usd_t1,
+                        ROUND(sum_usd_t2, 2) sum_usd_t2,
+                        CASE
+                            WHEN sum_usd_t2 IS NULL THEN 'NEW!'
+                            WHEN sum_usd_t2 = 0 THEN 'NEW!'
+                            ELSE ROUND((sum_usd_t1 * 1.0/sum_usd_t2 - 1) * 100, 2)
+                        END as 'delta_usd, %'
+                    FROM t1 LEFT JOIN t2 USING(seller_id)"""
             async with conn.execute(sql) as cursor:
                 result = await cursor.fetchall()
                 for row in result:
@@ -203,10 +247,10 @@ class AnalyticsAnother(MainDB):
         return result
 
 
-class AnalyticBlitz(MainDB):
+class AnalyticsBlitz(MainDB):
     """Оперативная аналитика по маркетплейсу"""
     async def get_top_blitz(self, top_num):
-        """ТОП-7 самых активно торгующихся за последние 10 часов"""
+        """ТОП самых активно торгующихся за последние 10 часов"""
         async with self.connector as conn:
             #TODO: Переделать этот огромный запрос
             sql = """WITH t_now AS(
@@ -449,10 +493,14 @@ class AnalyticBlitz(MainDB):
             # return result
 
     async def get_floor_dif(self, tf: int):
-        """Получаем коллекции у которых флор менядся последние 5
-        промежутков времени по 12 часов. Сравниваем на сколько изменилась цена.
+        """Получаем коллекции у которых флор менядся последние 9
+        промежутков времени по 'tf' часов. Сравниваем на сколько изменилась цена.
+        Оставляем только тех, у кого за последние 2 TF цена изменилась больше,
+        чем на 2%.
+        Плюс выводится количество сминтинных прдеметов
 
         :param tf - timeframe - промежуток вермени для анализа"""
+
         async with self.connector as conn:
             sql = f"""WITH t1 AS(SELECT coll_id, 
                         ROUND(AVG(floor_price), 2) AS avg_floor_1
@@ -525,28 +573,41 @@ class AnalyticBlitz(MainDB):
                             AND DATETIME(DATETIME(), '-{tf * 8} hour')
                         GROUP BY coll_id
                         ORDER BY date_add DESC
-                        )
-                    SELECT coll_addr, coll_name, avg_floor_1,
-                        ROUND((avg_floor_1/avg_floor_2 - 1) * 100, 2) 'floor_2, %',
-                        ROUND((avg_floor_1/avg_floor_3 - 1) * 100, 2) 'floor_3, %',
-                        ROUND((avg_floor_1/avg_floor_4 - 1) * 100, 2) 'floor_4, %',
-                        ROUND((avg_floor_1/avg_floor_5 - 1) * 100, 2) 'floor_5, %',
+                        ),
+                    minted AS(
+                        SELECT coll_id,
+                            COUNT(token_id) AS minted_count
+                        FROM mints
+                        GROUP BY coll_id
+                    ),
+                    main_tbl AS(SELECT coll_addr, coll_name, avg_floor_1,
+                        ROUND((avg_floor_1/avg_floor_2 - 1) * 100, 2) 'floor_2',
+                        ROUND((avg_floor_1/avg_floor_3 - 1) * 100, 2) 'floor_3',
+                        CASE
+                            WHEN avg_floor_4 IS NULL THEN NULL
+                            ELSE(ROUND((avg_floor_1/avg_floor_4 - 1) * 100, 2))
+                        END 'floor_4',
+                        CASE
+                            WHEN avg_floor_5 IS NULL THEN NULL
+                            ELSE(ROUND((avg_floor_1/avg_floor_5 - 1) * 100, 2))
+                        END 'floor_5',
                         CASE
                             WHEN avg_floor_6 IS NULL THEN NULL
                             ELSE(ROUND((avg_floor_1/avg_floor_6 - 1) * 100, 2))
-                        END 'floor_6, %',
+                        END 'floor_6',
                         CASE
                             WHEN avg_floor_7 IS NULL THEN NULL
                             ELSE(ROUND((avg_floor_1/avg_floor_7 - 1) * 100, 2))
-                        END 'floor_7, %',
+                        END 'floor_7',
                         CASE
                             WHEN avg_floor_8 IS NULL THEN NULL
                             ELSE(ROUND((avg_floor_1/avg_floor_8 - 1) * 100, 2))
-                        END 'floor_8, %',
+                        END 'floor_8',
                         CASE
                             WHEN avg_floor_9 IS NULL THEN NULL
                             ELSE(ROUND((avg_floor_1/avg_floor_9 - 1) * 100, 2))
-                        END 'floor_9, %'
+                        END 'floor_9',
+                        COALESCE(minted_count || '/' ||	tokens_count, 'None') AS minted_count
                     FROM t1
                         LEFT JOIN t2 USING(coll_id)
                         LEFT JOIN t3 USING(coll_id)
@@ -557,10 +618,30 @@ class AnalyticBlitz(MainDB):
                         LEFT JOIN t8 USING(coll_id)
                         LEFT JOIN t9 USING(coll_id)
                         LEFT JOIN collections USING(coll_id)
+                        LEFT JOIN minted USING(coll_id)
                     WHERE avg_floor_2 IS NOT NULL 
                         AND avg_floor_3 IS NOT NULL
-                        AND avg_floor_4 IS NOT NULL
-                        AND avg_floor_5 IS NOT NULL"""
+                    )
+                    SELECT * FROM main_tbl
+                    WHERE floor_2 > 2 AND floor_3 > 2
+                    LIMIT 10"""
+            async with conn.execute(sql) as cursor:
+                result = await cursor.fetchall()
+                for res in result:
+                    yield res
+                # return result
+
+
+class AnalyticsWhales(MainDB):
+    """Аналитика китов stargaze"""
+    async def top5_whales(self):
+        async with self.connector as conn:
+            sql = """SELECT owner_addr, owner_name, COUNT(token_id)
+                    FROM owners_tokens
+                        JOIN owners USING(owner_id)
+                    GROUP BY owner_addr, owner_name
+                    ORDER BY 3 DESC
+                    LIMIT 5"""
             async with conn.execute(sql) as cursor:
                 result = await cursor.fetchall()
                 for res in result:
@@ -569,7 +650,9 @@ class AnalyticBlitz(MainDB):
 
 
 if __name__ == "__main__":
-    result = asyncio.run(AnalyticBlitz().get_floor_dif())
+    coll_addr = 'stars1203ulnyhvzgex8weh3u4yk8prpq9kuh4hc6n9l58gkwehfwg2t4sqzd36f'
+    result = asyncio.run(AnalyticsBlitz().get_floor_dif(8))
+    # print(result)
     for r in result:
         print(r)
     #

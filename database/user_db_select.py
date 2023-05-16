@@ -17,13 +17,14 @@ class UserDBSelect(UserDB):
                 result = await cursor.fetchall()
             return [el[0] for el in result]
 
-    async def select_subscribe_users(self):
+    async def select_subscribe_users_24h_report(self):
         """Все активные пользователи,
         которые подписанны на рассылку отчетов"""
         async with self.connector as conn:
             sql = """SELECT u.user_id FROM users u
                     JOIN users_subscribe us ON u.user_id = us.user_id
                         AND us.subscribe_flag = 1
+                        AND report_name = '24h_report'
                     WHERE u.user_id NOT IN (
                         SELECT user_id FROM inactive_users
                         WHERE inactive_flag = 1
@@ -141,7 +142,7 @@ class UserDBSelect(UserDB):
                 return result if result else None
 
     async def select_buys_monitoring_info(self, monitor_id: int, addr_monitor: str):
-        """ИНФА для сообщения о свершивсейся сделки - ПРОДАЖИ"""
+        """ИНФА для сообщения о свершивсейся сделки - ПОКУПКИ"""
         # monitor_ids.append(addr_monitor)
         # data = monitor_ids
         async with self.connector as conn:
@@ -181,7 +182,7 @@ class UserDBSelect(UserDB):
     async def select_no_send_buys_monitor_id(self):
         """id неотправленных активностей по ПОКУПКАМ"""
         async with self.connector as conn:
-            sql = """SELECT monitor_id FROM sales_monitoring
+            sql = """SELECT monitor_id FROM buys_monitoring
                     WHERE monitor_id NOT IN (
                         SELECT monitor_id
                         FROM send_monitor_info
@@ -194,7 +195,7 @@ class UserDBSelect(UserDB):
 
 if __name__ == "__main__":
     monitors_ids = 7
-    addr_monitor = 'stars1654yth3nm628ej2x4tm6farrf0h7wju7c3cyp6'
-    result = asyncio.run(UserDBSelect().select_user_addrs_monitoring(1916570670))
+    addr_monitor = ''
+    result = asyncio.run(UserDBSelect().select_no_send_sales_monitor_id())
     for r in result:
         print(r)

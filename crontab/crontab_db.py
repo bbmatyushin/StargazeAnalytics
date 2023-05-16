@@ -43,7 +43,7 @@ async def addrs_monitoring():
 
 @aiocron.crontab('3 */4 * * *')
 async def transfer_owners():
-    """Получаем адерс и имя кошелька из основной БД
+    """Получаем адрес и имя кошелька из основной БД
     для переноса этой инфы в БД Users"""
     async for insert_data in SelectQuery().select_owner_addr_name():
         try:

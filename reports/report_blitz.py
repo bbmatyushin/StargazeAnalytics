@@ -1,10 +1,10 @@
 import asyncio
 
 from datetime import datetime
-from database.db_analytics import AnalyticBlitz
+from database.db_analytics import AnalyticsBlitz
 
 
-class BlitzReport(AnalyticBlitz):
+class BlitzReport(AnalyticsBlitz):
     async def get_delta(self, delta_value):
         if isinstance(delta_value, float):
             delta_value = f"+{delta_value}% 📈" if delta_value > 0 else \
@@ -101,9 +101,10 @@ class BlitzReport(AnalyticBlitz):
                     f"📊 <b>Аналитика цены floor за {tf}Ч</b>\n\n"
         report.append(head)
         async for data in self.get_floor_dif(tf=tf):
-            coll_addr, coll_name, floor, floor_2, floor_3, floor_4, floor_5, floor_6, floor_7, floor_8, floor_9 = \
+            coll_addr, coll_name, floor, floor_2, floor_3, floor_4, floor_5, floor_6, floor_7, \
+                floor_8, floor_9, minted_count = \
                 data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], \
-                data[9], data[10]
+                data[9], data[10], data[11]
             floor_dif_2 = await self.get_delta(floor_2)
             floor_dif_3 = await self.get_delta(floor_3)
             floor_dif_4 = await self.get_delta(floor_4)
@@ -120,6 +121,7 @@ class BlitzReport(AnalyticBlitz):
                              f"<b>{tf * 3}H</b> {floor_dif_4}, <b>{tf * 4}H</b> {floor_dif_5},\n" \
                              f"<b>{tf * 5}H</b> {floor_dif_6}, <b>{tf * 6}H</b> {floor_dif_7},\n" \
                              f"<b>{tf * 7}H</b> {floor_dif_8}, <b>{tf * 8}H</b> {floor_dif_9},\n" \
+                             f"<b>Minted</b>: {minted_count}\n" \
                              f"<a href='{url_meta}'><em>{'view on metabase':*^5}</em></a>\n"
             report.append(output_ru)
         # return "".join(report[:4096])
