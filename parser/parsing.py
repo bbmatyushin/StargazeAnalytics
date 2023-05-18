@@ -48,7 +48,7 @@ class Parser:
                 # else:
                 #     return response.status_code
 
-    async def get_tokens_data(self, coll_addr: str, token_num: str):
+    async def get_tokens_data(self, coll_addr: str, token_num: int):
         """Получаем информацию о предметах/токенах"""
         async with ClientSession() as session:
             query = """query Tokens {
@@ -61,7 +61,7 @@ class Parser:
                     }"""
             async with session.post(url=self.api_url, headers=self.header_api,
                                     json={'query': query.replace("<coll_addr>", coll_addr)
-                                            .replace("<token_num>", token_num)}) as response:
+                                            .replace("<token_num>", str(token_num))}) as response:
                 if response.status == 200:
                     json_data = await response.json()
                     data = json_data.get('data').get('token')
@@ -212,8 +212,11 @@ class Parser:
                         price_usd = event["node"]["data"].get("mintPriceUsd")
                         price_usd = float(price_usd) if price_usd else None
                         date_create = event["node"].get("createdAt")
-                        yield block_height, coll_addr, token_num, recipient_addr, creator_addr, \
-                            price_stars, price_usd, date_create
+                        if coll_addr and token_num and recipient_addr and creator_addr:
+                            yield block_height, coll_addr, token_num, recipient_addr, creator_addr, \
+                                price_stars, price_usd, date_create
+                        else:
+                            continue
 
 
     async def get_listing_and_update_price_data(self):

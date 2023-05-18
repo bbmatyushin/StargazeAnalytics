@@ -63,12 +63,14 @@ class UserDBInsert(UserDB):
             await conn.execute(sql, (user_id,))
             await conn.commit()
 
-    async def insert_users_subscribe(self, user_id: int):
-        """Отмечаем флагом тех кто подписался на отчеты"""
+    async def insert_users_subscribe(self, insert_data: list):
+        """Отмечаем флагом тех кто подписался на отчеты
+        insert_data = [user_id, '24_report' | 7d_report' | 30d_report' | whales_report' | other_reports']
+        """
         async with self.connector as conn:
             sql = """INSERT INTO users_subscribe(user_id, subscribe_flag, report_name, date_add)
-                    VALUES(?, 1, '24h_report', DATETIME())"""
-            await conn.execute(sql, (user_id,))
+                    VALUES(?, 1, ?, DATETIME())"""
+            await conn.executemany(sql, insert_data)
             await conn.commit()
 
     async def insert_send_daily_report(self, user_id: int, report_id: int):

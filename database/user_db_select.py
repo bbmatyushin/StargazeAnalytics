@@ -17,14 +17,17 @@ class UserDBSelect(UserDB):
                 result = await cursor.fetchall()
             return [el[0] for el in result]
 
-    async def select_subscribe_users_24h_report(self):
+    async def select_subscribe_users_report(self, report_name: str):
         """Все активные пользователи,
-        которые подписанны на рассылку отчетов"""
+        которые подписанны на рассылку отчетов
+
+        :param report_name='24h_report', '7d_report'"""
+
         async with self.connector as conn:
-            sql = """SELECT u.user_id FROM users u
+            sql = f"""SELECT u.user_id FROM users u
                     JOIN users_subscribe us ON u.user_id = us.user_id
                         AND us.subscribe_flag = 1
-                        AND report_name = '24h_report'
+                        AND report_name = '{report_name}'
                     WHERE u.user_id NOT IN (
                         SELECT user_id FROM inactive_users
                         WHERE inactive_flag = 1
@@ -48,7 +51,7 @@ class UserDBSelect(UserDB):
     async def select_admins_subscribe(self):
         """Выборка админов бота с подпиской"""
         async with self.connector as conn:
-            sql = """SELECT admins.user_id
+            sql = """SELECT DISTINCT admins.user_id
                     FROM admins
                     LEFT JOIN inactive_users USING(user_id)
                     LEFT JOIN users_subscribe USING(user_id)
@@ -70,7 +73,7 @@ class UserDBSelect(UserDB):
     async def select_weekly_report_id(self):
         """Забираем последний номер отправленного ежеНЕДЕЛЬНОГО отчета"""
         async with self.connector as conn:
-            sql = "SELECT MAX(report_id) FROM weekly_report"
+            sql = "SELECT MAX(report_id) FROM weekly_reports"
             async with conn.execute(sql) as cursor:
                 result = await cursor.fetchone()
             return result[0]
@@ -78,7 +81,7 @@ class UserDBSelect(UserDB):
     async def select_monthly_report_id(self):
         """Забираем последний номер отправленного ежеМЕСЯЧНОГО отчета"""
         async with self.connector as conn:
-            sql = "SELECT MAX(report_id) FROM monthly_report"
+            sql = "SELECT MAX(report_id) FROM monthly_reports"
             async with conn.execute(sql) as cursor:
                 result = await cursor.fetchone()
             return result[0]
@@ -196,6 +199,6 @@ class UserDBSelect(UserDB):
 if __name__ == "__main__":
     monitors_ids = 7
     addr_monitor = ''
-    result = asyncio.run(UserDBSelect().select_no_send_sales_monitor_id())
+    result = asyncio.run(UserDBSelect().select_subscribe_users_report(report_name='24h_report'))
     for r in result:
         print(r)

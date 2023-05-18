@@ -1,6 +1,6 @@
 import asyncio
 
-from database.db_analytics import AnalyticsWhales
+from analytics.analytics_whales import AnalyticsWhales
 
 
 class WhalesReport:

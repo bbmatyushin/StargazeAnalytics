@@ -32,11 +32,13 @@ class UserDB:
                         FOREIGN KEY (user_id) REFERENCES users(user_id) 
                         );
                     CREATE TABLE IF NOT EXISTS users_subscribe(
-                        user_id INTEGER UNIQUE,
+                        user_id INTEGER,
                         subscribe_flag INTEGER,
                         report_name TEXT,
                         date_add DATETIME,
-                        FOREIGN KEY (user_id) REFERENCES users(user_id) 
+                        UNIQUE(user_id, report_name),
+                        FOREIGN KEY (user_id) REFERENCES users(user_id)
+                        ON DELETE CASCADE 
                         );
                     CREATE TABLE IF NOT EXISTS daily_reports(
                         report_id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -9,8 +9,9 @@ sudo docker build -t sg_data_parser .
 ```shell
 sudo docker run \
 --name=sg_analytics_parser \
--v `pwd`/database/stargaze_analytics.db:/StargazeParser/database/stargaze_analytics.db \
--v `pwd`/database/owners_tokens.db:/StargazeParser/database/owners_tokens.db \
+-v `pwd`/database/_db/stargaze_analytics.db:/StargazeParser/database/_db/stargaze_analytics.db \
+-v `pwd`/database/_db/owners_tokens.db:/StargazeParser/database/_db/owners_tokens.db \
+-v `pwd`/database/_db/mints.db:/StargazeParser/database/_db/mints.db \
 --restart=always \
 -d \
 sg_data_parser

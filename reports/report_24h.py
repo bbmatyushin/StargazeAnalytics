@@ -1,11 +1,11 @@
 import asyncio
-from database.db_analytics import Analytics24H
+from analytics.analytics_time import AnalyticsTime
 
 
 class DailyReport:
     """Данные для ежедневных отчетов"""
     def __init__(self):
-        self.analytics = Analytics24H()
+        self.analytics = AnalyticsTime(_hours=24)
 
     async def get_delta_value(self, delta_value):
         delta_value = f"+{delta_value}% 📈" if delta_value > 0 else \
@@ -42,8 +42,9 @@ class DailyReport:
         async for data in self.analytics.volum_top_num(top_num):
             coll_name, coll_addr, sum_stars_t1, sum_stars_t2, \
                 delta_stars, sum_usd_t1, sum_usd_t2, delta_usd, count_t1, count_t2, delta_count, \
-                floor_price_t1, floor_price_t2, delta_floor = data[0], data[1], data[2], data[3], \
-                    data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13]
+                floor_price_t1, floor_price_t2, delta_floor, avg_stars_t1, avg_stars_t2, delta_avg_stars \
+                = data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], \
+                data[10], data[11], data[12], data[13], data[14], data[15], data[16]
             url_mb = f"{url_metabase}{coll_addr}&chart_dates=past7days~#theme=night"
             if isinstance(delta_stars, float):
                 delta_stars = await self.get_delta_value(delta_stars)
@@ -51,9 +52,12 @@ class DailyReport:
                 delta_count = await self.get_delta_value(delta_count)
             if isinstance(delta_floor, float):
                 delta_floor = await self.get_delta_value(delta_floor)
+                if isinstance(delta_avg_stars, float):
+                    delta_avg_stars = await self.get_delta_value(delta_avg_stars)
             output_ru = f"\t▪️ <a href='{url_sg}{coll_addr}'><b>{coll_name}</b></a>\n" \
                         f"\t\t↳ <b>Vol.</b>: {sum_stars_t1:,} STARS ({delta_stars})\n" \
                         f"\t\t↳ <b>Sales</b>: {count_t1} ps. ({delta_count})\n" \
+                        f"\t\t↳ <b>avg Price</b>: {int(avg_stars_t1):,} STARS ({delta_avg_stars})\n" \
                         f"\t\t↳ <b>Floor</b>: {floor_price_t1:,} STARS ({delta_floor})\n" \
                         f"\t\t↳ <a href='{url_mb}'><em>view on metabase</em></a>\n\n"
             report_2_ru.append(output_ru)
@@ -61,13 +65,13 @@ class DailyReport:
         return "".join(report_2_ru)
 
     async def get_buyers_top3(self):
-        """ТОП-3 Кита за послендние 24 Ч """
+        """ТОП-3 покупателя за послендние 24 Ч """
         url: str = 'https://www.stargaze.zone/profile'  # addr/all
         report_3_ru: list = []
         num: int = 1
         report_head: str = "\n👤 <b>ТОП-3 Покупателя</b>:\n"
         report_3_ru.append(report_head)
-        async for data in self.analytics.buyers_top3(hours=24):
+        async for data in self.analytics.buyers_top3():
             buyer_name, buyer_addr, sum_stars_t1, sum_stars_t2, delta_stars, \
                 sum_usd_t1, sum_usd_t2, delta_usd = data[0], data[1], data[2], \
                 data[3], data[4], data[5], data[6], data[7]
@@ -80,13 +84,13 @@ class DailyReport:
         return "".join(report_3_ru)
 
     async def get_sellers_top3(self):
-        """ТОП-3 Кита за послендние 24 Ч """
+        """ТОП-3 продавца за послендние 24 Ч """
         url: str = 'https://www.stargaze.zone/profile'  # addr/all
         report_4_ru: list = []
         num: int = 1
         report_head: str = "\n👥 <b>ТОП-3 Продавца</b>:\n"
         report_4_ru.append(report_head)
-        async for data in self.analytics.sellers_top3(hours=24):
+        async for data in self.analytics.sellers_top3():
             seller_name, seller_addr, sum_stars_t1, sum_stars_t2, delta_stars, \
                 sum_usd_t1, sum_usd_t2, delta_usd = data[0], data[1], data[2], \
                 data[3], data[4], data[5], data[6], data[7]

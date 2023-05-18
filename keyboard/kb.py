@@ -5,8 +5,12 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 """Кнопка подписаться на рассылку отчетов"""
 subscribe_btn = InlineKeyboardButton(text='📝 Subscribe', callback_data='subscribe')
-"""Кнопка для получения отчёт прямо сейчас"""
-get_report_bnt = InlineKeyboardButton(text='📊 Get report', callback_data='get_report_24h')
+"""Кнопка для ВЫБОРА отчётов """
+reports_bnt = InlineKeyboardButton(text='📊 Reports', callback_data='reports_menu')
+"""Кнопка для получения отчёт за 24 ЧАСА прямо сейчас"""
+get_24h_report = InlineKeyboardButton(text='1️⃣ 24H report', callback_data='get_report_24h')
+"""Кнопка для получения отчёт за 7 ДНЕЙ прямо сейчас"""
+get_7d_report = InlineKeyboardButton(text='2️⃣ 7D report', callback_data='get_report_7d')
 """Кнопка показать пример отчёта"""
 example_report = InlineKeyboardButton(text='Example report 👀', callback_data='example_report')
 """Кнопка Нет спасибо"""
@@ -30,12 +34,17 @@ monitoring_addrs = InlineKeyboardButton(text='📔 Monitoring', callback_data='m
 ikb_start = InlineKeyboardMarkup(row_width=2).add(subscribe_btn, example_report)
 """Отдельная кнопка ПОДПИСАТЬСЯ"""
 ikb_subscribe = InlineKeyboardMarkup(row_width=1).add(subscribe_btn)
+"""Кнопка МЕНЮ ОТЧЁТОВ"""
+ikb_reports_menu = InlineKeyboardMarkup(row_width=1).add(reports_bnt)
+"""Кнопка для ВЫБОРА ОТЧЁТОВ"""
+ikb_reports_choice = InlineKeyboardMarkup(row_width=2).add(get_24h_report, get_7d_report,
+                                                           back_btn)
 """Отдельная кнопка ПОКАЗАТЬ ОТЧЁТ"""
-ikb_get_report_24h = InlineKeyboardMarkup(row_width=1).add(get_report_bnt)
+ikb_get_report_24h = InlineKeyboardMarkup(row_width=1).add(get_24h_report)
 """Подписаться или Отказаться"""
 ikb_subscribe_no = InlineKeyboardMarkup(row_width=2).add(subscribe_btn, no_thanks)
 """ИнлайнКнопка основного МЕНЮ"""
-ikb_bot_menu = InlineKeyboardMarkup(row_width=2).add(get_report_bnt, wallets)
+ikb_bot_menu = InlineKeyboardMarkup(row_width=2).add(reports_bnt, wallets)
 """Управление адресами кошельков"""
 ikb_wallet_action = InlineKeyboardMarkup(row_width=2).add(delete_addr, add_new_addr,
                                                           monitoring_addrs, back_btn)

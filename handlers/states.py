@@ -17,3 +17,7 @@ class FSMCommands(StatesGroup):
 class FSMMonitoring(StatesGroup):
     wallet_menu = State()
     receive_wallet_addr = State()
+
+
+class FSMReports(StatesGroup):
+    reports_menu = State()
