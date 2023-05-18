@@ -24,10 +24,10 @@ async def get_bot_menu(msg: Message, state: FSMContext):
 @dp.message_handler(commands=['get_report_24h'])
 async def get_report_24h_msg(msg: Message):
     """Получаем отчет за последние 24 часа"""
-    if msg.from_user.id in await UserDBSelect().select_subscribe_users_24h_report():
+    if msg.from_user.id in await UserDBSelect().select_subscribe_users_report(report_name='24h_report'):
         text_ru = await get_daily_report()
         await msg.answer(text=text_ru, parse_mode='HTML',
-                         reply_markup=kb.ikb_get_report_24h)
+                         reply_markup=kb.ikb_reports_menu)
     else:
         await msg.answer(text=LEXICON_RU_HTML["no_subscribe"], parse_mode='HTML',
                          reply_markup=kb.ikb_subscribe)

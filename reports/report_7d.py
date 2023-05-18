@@ -2,10 +2,10 @@ import asyncio
 from analytics.analytics_time import AnalyticsTime
 
 
-class DailyReport:
+class WeeklyReport:
     """Данные для ежедневных отчетов"""
     def __init__(self):
-        self.analytics = AnalyticsTime(_hours=24)
+        self.analytics = AnalyticsTime(_hours=168)
 
     async def get_delta_value(self, delta_value):
         delta_value = f"+{delta_value}% 📈" if delta_value > 0 else \
@@ -14,19 +14,19 @@ class DailyReport:
 
     async def get_total_volume(self):
         """Общие объёмы продаж за последние 24 часа"""
-        total_24h = await self.analytics.total_volum()
+        total_7d = await self.analytics.total_volum()
         # sum_STARS_t1, sum_STARS_t2, delta_STARS, sum_USD_t1, sum_USD_t2, delta_USD
-        if isinstance(total_24h[2], float):
-            delta_stars = await self.get_delta_value(total_24h[2])
+        if isinstance(total_7d[2], float):
+            delta_stars = await self.get_delta_value(total_7d[2])
         else:
-            delta_stars = total_24h[2]
-        if isinstance(total_24h[5], float):
-            delta_usd = await self.get_delta_value(total_24h[5])
+            delta_stars = total_7d[2]
+        if isinstance(total_7d[5], float):
+            delta_usd = await self.get_delta_value(total_7d[5])
         else:
-            delta_usd = total_24h[5]
+            delta_usd = total_7d[5]
         report_1_ru = f"\n⭐️ <b>Общий объём продаж</b>:\n" \
-                      f"\t◗ {total_24h[0]:,} STARS ({delta_stars})\n" \
-                      f"\t◗ {total_24h[3]:,} USD ({delta_usd})\n"
+                      f"\t◗ {total_7d[0]:,} STARS ({delta_stars})\n" \
+                      f"\t◗ {total_7d[3]:,} USD ({delta_usd})\n"
         return report_1_ru
 
     async def get_total_top_num(self):
@@ -65,7 +65,7 @@ class DailyReport:
         return "".join(report_2_ru)
 
     async def get_buyers_top3(self):
-        """ТОП-3 покупателя за послендние 24 Ч """
+        """ТОП-3 покупателя за послендние 7Д"""
         url: str = 'https://www.stargaze.zone/profile'  # addr/all
         report_3_ru: list = []
         num: int = 1
@@ -84,7 +84,7 @@ class DailyReport:
         return "".join(report_3_ru)
 
     async def get_sellers_top3(self):
-        """ТОП-3 продавца за послендние 24 Ч """
+        """ТОП-3 продавца за послендние 7D """
         url: str = 'https://www.stargaze.zone/profile'  # addr/all
         report_4_ru: list = []
         num: int = 1
@@ -103,22 +103,22 @@ class DailyReport:
         return "".join(report_4_ru)
 
 
-async def get_daily_report():
-    task_1 = asyncio.create_task(DailyReport().get_total_volume())
-    task_2 = asyncio.create_task(DailyReport().get_total_top_num())
-    task_3 = asyncio.create_task(DailyReport().get_buyers_top3())
-    task_4 = asyncio.create_task(DailyReport().get_sellers_top3())
+async def get_weekly_report():
+    task_1 = asyncio.create_task(WeeklyReport().get_total_volume())
+    task_2 = asyncio.create_task(WeeklyReport().get_total_top_num())
+    task_3 = asyncio.create_task(WeeklyReport().get_buyers_top3())
+    task_4 = asyncio.create_task(WeeklyReport().get_sellers_top3())
     report_1_ru = await task_1
     report_2_ru = await task_2
     report_3_ru = await task_3
     report_4_ru = await task_4
-    header = "#24H_report\n\n"\
-             "📊 <b>Аналитика Stargaze за последние 24Ч</b>\n\n"
+    header = "#7D_report\n\n"\
+             "📊 <b>Аналитика Stargaze за последние 7Д</b>\n\n"
     return header + report_1_ru + report_2_ru + report_3_ru + report_4_ru
 
 
 if __name__ == "__main__":
-    res = asyncio.run(get_daily_report())
+    res = asyncio.run(get_weekly_report())
     # for r in res:
     print(res)
 

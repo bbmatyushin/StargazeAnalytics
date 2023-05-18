@@ -8,7 +8,7 @@ from usefultools.create_bot import bot, dp
 from database.user_db_select import UserDBSelect, UserDB
 from crontab import crontab_users, crontab_db, crontab_reports  # Запуск задач по расписанию
 
-from handlers import admins, main, commands, addrs_monitoring
+from handlers import admins, main, commands, reports, addrs_monitoring
 
 
 async def on_startup(_):
@@ -16,6 +16,7 @@ async def on_startup(_):
     crontab_db.addrs_monitoring.start()
     crontab_db.transfer_owners.start()
     crontab_reports.send_daily_report.start()
+    crontab_reports.send_weekly_report.start()
     crontab_reports.send_blitz_report.start()
     # asyncio.get_event_loop().run_forever()
     try:

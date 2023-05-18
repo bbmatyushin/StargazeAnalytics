@@ -48,7 +48,7 @@ class MintDB:
                         price_stars, price_usd,
                         date_create
                     FROM mints_data
-                    WHERE DATETIME(date_create) >= DATETIME(DATETIME(), '-5 minutes')
+                    WHERE DATETIME(date_add) >= DATETIME(DATETIME(), '-20 minutes') 
                     ORDER BY date_create DESC"""
             async with conn.execute(sql) as cursor:
                 result = await cursor.fetchall()

@@ -1,7 +1,7 @@
 import asyncio
 
 from datetime import datetime
-from database.db_analytics import AnalyticsBlitz
+from analytics.analytics_blitz import AnalyticsBlitz
 
 
 class BlitzReport(AnalyticsBlitz):

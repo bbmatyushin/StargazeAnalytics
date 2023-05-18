@@ -59,23 +59,17 @@ async def send_example_report(callback: CallbackQuery):
 async def subscribe_report(callback: CallbackQuery):
     user_id = callback.from_user.id
     try:  # ставим флаг, что пользователь подписан
-        await UserDBInsert().insert_users_subscribe(user_id=user_id)
+        insert_many = [
+            [user_id, '24h_report'],
+            [user_id, '7d_report'],
+            [user_id, '30d_report'],
+            [user_id, 'whales_report'],
+            [user_id, 'other_reports']
+        ]
+        await UserDBInsert().insert_users_subscribe(insert_data=insert_many)
     except aiosqlite.IntegrityError as err:
-        logging.warning(err)
-    await callback.message.answer(text=LEXICON_RU_HTML["subscribe"], parse_mode='HTML',
-                                  reply_markup=kb.ikb_get_report_24h)
-    await callback.answer()
-
-
-@dp.callback_query_handler(text='get_report_24h', state="*")
-async def get_report_24h_callback(callback: CallbackQuery):
-    """Получаем отчет за последние 24 часа"""
-    if callback.from_user.id in await UserDBSelect().select_subscribe_users_24h_report():
-        text_ru = await get_daily_report()
-        await callback.message.answer(text=text_ru, parse_mode="HTML")
-    else:
-        await callback.message.answer(text=LEXICON_RU_HTML["no_subscribe"],
-                                      parse_mode='HTML')
+        logging.warning(f"INSERT users_subscribe - {err}")
+    await callback.message.answer(text=LEXICON_RU_HTML["subscribe"], parse_mode='HTML')
     await callback.answer()
 
 

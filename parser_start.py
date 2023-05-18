@@ -19,7 +19,7 @@ formatter = Formatter('%(asctime)s [%(levelname)s] %(message)s')
 logger = Logger.with_default_handlers(name='my-logger', formatter=formatter, level=LogLevel.INFO)
 
 class GetDataStargaze:
-    async def main_insert(self, coll_addr: str, token_num: str):
+    async def main_insert(self, coll_addr: str, token_num: int):
         """Вставляем данные в таблицы collections, tokens, rarity"""
         if coll_addr:
             coll_data = await Parser().get_collection_data(coll_addr)  # получаем данные по коллекции через api
@@ -248,12 +248,12 @@ async def main():
     task0 = asyncio.create_task(MainDB().create_tables())
     task1 = asyncio.create_task(GetDataStargaze().sales_parsing())
     task2 = asyncio.create_task(GetDataStargaze().burns_parsing())
-    task3 = asyncio.create_task(GetDataStargaze().mints_parsing())
+    # task3 = asyncio.create_task(GetDataStargaze().mints_parsing())
     task4 = asyncio.create_task(GetDataStargaze().listings_parsing())
     await task0
     await task1
     await task2
-    await task3
+    # await task3
     await task4
     # await asyncio.gather(task0, task1, task2, task3, task4)
     await logger.info(f" ======> Done {datetime.now() - start}")
@@ -261,11 +261,23 @@ async def main():
     return None
 
 
-@aiocron.crontab('0-10 20,21 * * * */3')
+@aiocron.crontab('*/5 * * * * ')
+async def main_mint_insert():
+    """Вставляем в основную БД данные собранные по минту"""
+    start = datetime.now()
+    await logger.info(f" ======> Start MINT DATA INSERT at {start}")
+    task = asyncio.create_task(GetDataStargaze().mints_parsing())
+    await task
+    await logger.info(f" ======> MINT DATA INSERT Done {datetime.now() - start}")
+
+
+
+@aiocron.crontab('0-10 18,19 * * * */3')
 async def mint_fast_parsing():
     """Парсим данные по минтам каждые 3 секунды
-    с 20:00 до 20:10 и с 21:00 до 21:10 - в это время,
-    как правило новые минты."""
+    с 21:00 до 21:10 и с 22:00 до 22:10 - в это время,
+    как правило новые минты.
+    В Docker время в UTC, поэтому 18 и 19"""
     create_db = asyncio.create_task(MintDB().create_table())
     await create_db
     data_mints = Parser().get_mints_data()
@@ -283,7 +295,7 @@ async def mint_slow_parsing():
     """Парсим данные по минтам раз в минуту,
     в любое время кроме 20:00-20:10 и 21:00-21:10,
     в это время работает парсер каждые 3 секунды"""
-    condition_hours = datetime.now().hour != 20 and datetime.now().hour != 21
+    condition_hours = datetime.now().hour != 18 and datetime.now().hour != 19
     condition_minute = datetime.now().minute > 10
     if condition_hours or condition_minute:
         create_db = asyncio.create_task(MintDB().create_table())
@@ -331,5 +343,6 @@ if __name__ == "__main__":
     insert_owners_tokens.start()
     mint_fast_parsing.start()
     mint_slow_parsing.start()
+    main_mint_insert.start()
     asyncio.get_event_loop().run_forever()
     # asyncio.run(mint_parsing())
